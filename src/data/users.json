@@ -1,0 +1,26 @@
+[
+  {
+    "id": "u1",
+    "handle": "@StudentJohn",
+    "name": "John Doe",
+    "reputation": 42,
+    "rank": "Helix",
+    "verifiedCount": 12
+  },
+  {
+    "id": "u2",
+    "handle": "@CampusExplorer",
+    "name": "Jane Smith",
+    "reputation": 87,
+    "rank": "Nucleus",
+    "verifiedCount": 35
+  },
+  {
+    "id": "u3",
+    "handle": "@TechGuru",
+    "name": "Alex Tech",
+    "reputation": 21,
+    "rank": "Chromosome",
+    "verifiedCount": 5
+  }
+]

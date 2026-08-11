@@ -1,0 +1,42 @@
+[
+  {
+    "id": "b1",
+    "name": "Main Administration",
+    "description": "The central hub of the university.",
+    "category": "Campus",
+    "details": {
+      "wifi": "Strong coverage in lobby",
+      "quietSpots": "3rd floor waiting area",
+      "history": [
+        { "date": "2023-10-01", "change": "Added new waiting area seating", "author": "@Admin" }
+      ]
+    }
+  },
+  {
+    "id": "b2",
+    "name": "Central Library",
+    "description": "Four floors of books and study spaces.",
+    "category": "Academic",
+    "details": {
+      "wifi": "Excellent on floors 1-3, weak in basement",
+      "quietSpots": "Basement silent reading room",
+      "history": [
+        { "date": "2024-01-15", "change": "Updated wifi coverage details", "author": "@StudentJohn" },
+        { "date": "2024-02-20", "change": "Added basement silent zone", "author": "@CampusExplorer" }
+      ]
+    }
+  },
+  {
+    "id": "b3",
+    "name": "Computer Science Lab",
+    "description": "High performance computing and project rooms.",
+    "category": "Academic",
+    "details": {
+      "wifi": "Excellent (Dedicated network)",
+      "quietSpots": "Project room 102 (booking required)",
+      "history": [
+        { "date": "2023-11-05", "change": "Added booking requirement for project room", "author": "@TechGuru" }
+      ]
+    }
+  }
+]

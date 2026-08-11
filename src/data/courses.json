@@ -1,0 +1,24 @@
+[
+  {
+    "id": "c1",
+    "code": "CS101",
+    "name": "Introduction to Computer Science",
+    "description": "Fundamental concepts of programming and algorithms.",
+    "category": "Academic",
+    "professor": "Dr. Alan Turing",
+    "details": {
+      "difficulty": "Medium",
+      "practicalFocus": "High",
+      "history": [
+        { "date": "2023-09-01", "change": "Updated practical projects list", "author": "@TechGuru" }
+      ],
+      "reviews": [
+        {
+          "author": "@StudentJohn",
+          "content": "Great introductory course, highly recommend paying attention to the lab sessions.",
+          "verified": true
+        }
+      ]
+    }
+  }
+]
