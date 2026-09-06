@@ -1,0 +1,18 @@
+# Environment variables (NEVER COMMIT)
+.env
+.env.*
+*.env
+.env.local
+!*.env.example
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db

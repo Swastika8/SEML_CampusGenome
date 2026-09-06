@@ -1,76 +1,160 @@
-# Campus Genome Frontend (Software Engineering Laboratory)
+# Campus Genome 🧬
 
-This project contains the complete front-end user interface for "Campus Genome," a digital knowledge base (DNA) for college campuses, powered by verified student contributions. It is built as a single-page React application using Tailwind CSS for styling and `react-joyride` for the product tour.
+Campus Genome is an enterprise-grade, student-powered digital knowledge graph and campus intelligence platform. It replaces outdated, fragmented college information with real-time, verified student contributions, interactive schematic campus navigation, academic course guides, career insights, and curated campus lifestyle secrets.
 
-*This project is front-end only and does not contain backend logic, authentication, or real data persistence. Data is mocked for UI demonstration purposes.*
+Built with a modern full-stack decoupled architecture:
+- **Frontend**: React 19, Vite, Tailwind CSS, Lucide Icons, Glassmorphism design system
+- **Backend**: Node.js, Express REST API, PostgreSQL, JWT Authentication, Bcrypt
+- **Architecture & Modeling**: StarUML `.mdj` state charts, class diagrams, and entity specifications
 
-## Key Technical Features & Implementations
+---
 
-*   **Interactive Schematic Map:** A custom SVG map interface with clickable zones for key campus buildings, opening dynamic info panels.
-*   **Knowledge Evolution Visualization:** Data points feature a visual history view/timeline.
-*   **Trust & Verification UI:** Real-time verified badges and reputation ranking display on mocked user contributions.
-*   **Senior-Level Aesthetic:** Custom structured layouts, advanced CSS transitions, and advanced form wizard design (avoiding standard card grids).
-*   **Dynamic Theme Toggle:** Comprehensive support for light and dark modes.
-*   **React-Joyride Tour:** Built-in guided product tour on the dashboard.
+## 🌟 Key Features
 
-## File Structure and Purpose
+1. **Authentication & Role-Based Access Control (RBAC)**
+   - Secure login & student onboarding with handles (`@handle`), email, department, and graduation year.
+   - BCrypt hashed passwords and JWT token authorization.
+   - Dynamic reputation ranking system (`Helix`, `Chromosome`, `Nucleus`, `Moderator`).
 
-root/
-├── public/                # Static assets (images, icons)
-│   └── background.png     # (The college image, image_5.png)
+2. **Interactive Schematic Campus Map**
+   - Clickable campus zones with building intelligence, departments, lab timings, and facilities.
+
+3. **Academic & Career Repositories**
+   - 12 verified campus departments with curated subject guides, syllabus notes, and study material.
+   - Interview archives, placement insights, and compensation benchmarks.
+
+4. **Curated Campus Lifestyle & Verified Secrets**
+   - Student secrets, late-night spots, campus hacks, and hidden study nooks.
+
+5. **Live Unified Search & Moderated Contribution Engine**
+   - Real-time global search across buildings, courses, secrets, and events.
+   - Interactive contribution modals with image upload support and automated review status.
+
+---
+
+## 📁 Repository Structure
+
+```text
+SEML_CampusGenome/
+├── backend/                  # Node.js & Express REST API
+│   ├── src/
+│   │   ├── config/           # Database pool & environment configs
+│   │   ├── controllers/      # Route logic (auth, academics, buildings, etc.)
+│   │   ├── db/               # PostgreSQL schema migrations, init & seed scripts
+│   │   ├── middleware/       # JWT auth & centralized error handling
+│   │   ├── routes/           # REST endpoints
+│   │   └── server.js         # API entrypoint
+│   ├── .env.example          # Sample environment variables
+│   └── package.json
 │
-├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── common/        # Shared components (buttons, search, theme-toggle)
-│   │   │   ├── Button.jsx
-│   │   │   ├── ThemeToggle.jsx
-│   │   │   └── VerificationChip.jsx
-│   │   │
-│   │   ├── layout/        # Major structural components
-│   │   │   ├── Header.jsx       # Navigation, logo, global search, theme toggle
-│   │   │   ├── DashboardLayout.jsx # Handles the overlay background image
-│   │   │   └── InfoSidePanel.jsx   # Contextual sidebar for map interaction
-│   │   │
-│   │   ├── modules/       # Components specific to features
-│   │   │   ├── MapView.jsx     # Controls the schematic map interactions
-│   │   │   ├── ContributionWizard.jsx # Multi-step form for adding knowledge
-│   │   │
-│   │   └── dashboard/      # Specific components for the main landing view
-│   │       ├── HeroMessage.jsx
-│   │       ├── Ticker.jsx
-│   │       └── ContributorList.jsx
-│   │
-│   ├── context/           # React Context providers
-│   │   ├── DataContext.jsx     # Stores the mocked knowledge data
-│   │   ├── ThemeContext.jsx    # Manages light/dark mode state
-│   │   └── ContributionContext.jsx # Handles form wizard state
-│   │
-│   ├── data/              # Mocked data structures (JSON files)
-│   │   ├── buildings.json
-│   │   ├── courses.json
-│   │   └── users.json
-│   │
-│   ├── pages/             # Major page views (routed)
-│   │   └── Dashboard.jsx     # Main landing page with hero, search, map
-│   │
-│   ├── App.jsx            # Main app component with routing
-│   ├── index.css          # Global styles (Tailwind base)
-│   └── main.jsx           # Entry point
+├── frontend/                 # React + Vite Single Page Application
+│   ├── public/               # Static assets & college photography
+│   ├── src/
+│   │   ├── components/       # Layout, Modals, Wizards, Header & Sidebar
+│   │   ├── context/          # Auth, Theme, Data & Contribution contexts
+│   │   ├── data/             # Departments taxonomy & fallback data
+│   │   ├── pages/            # Login, Dashboard, Academics, Career, Map, Lifestyle
+│   │   ├── App.jsx           # Protected routing & layout hierarchy
+│   │   └── main.jsx          # React DOM entry
+│   └── package.json
 │
-├── tailwind.config.js    # Tailwind CSS configuration (fonts, colors)
-└── README.md              # This file
+├── postman/                  # Postman test suites
+│   ├── CampusGenome.postman_collection.json
+│   └── CampusGenome.postman_environment.json
+│
+├── CampusGenome.mdj          # Software Engineering UML & Class Models
+├── CampusGenome2.mdj         # Component & Sequence Architecture
+├── State_Chart.mdj           # State Transition Models
+├── package.json              # Root npm scripts orchestration
+└── README.md
+```
 
+---
 
-### Installation and Usage
+## 🚀 Quick Start Guide
 
-1.  Clone the repository.
-2.  Run `npm install` to install dependencies (React, Tailwind CSS, react-joyride).
-3.  Run `npm run dev` to view the application locally.
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [PostgreSQL](https://www.postgresql.org/) (v14 or higher)
 
-### Modifying the Tour
+### 1. Backend Setup
 
-The configuration for the React-Joyride tour can be found in `src/pages/Dashboard.jsx`. Modifying the `steps` array will change the tour.
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   npm install
+   ```
 
-### Mock Data
+2. Create your `.env` configuration file from the template:
+   ```bash
+   cp .env.example .env
+   ```
+   Configure your PostgreSQL connection variables:
+   ```env
+   PORT=5000
+   NODE_ENV=development
+   PGHOST=localhost
+   PGPORT=5432
+   PGUSER=postgres
+   PGPASSWORD=your_postgres_password
+   PGDATABASE=CampusGenome
+   JWT_SECRET=your_secret_key_here
+   JWT_EXPIRES_IN=7d
+   ```
 
-The application runs purely on mock data provided in `src/data/`. For demonstration, this data can be modified. *Changes made through the Contribution Wizard will not persist.*
+3. Initialize and seed the PostgreSQL database:
+   ```bash
+   npm run db:init
+   npm run db:seed
+   ```
+
+4. Start the backend development server:
+   ```bash
+   npm run dev
+   ```
+   *The API will be live at `http://localhost:5000`.*
+
+---
+
+### 2. Frontend Setup
+
+1. In a new terminal, navigate to the frontend directory:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   *The application will open at `http://localhost:5173`.*
+
+---
+
+## 🔑 Demo Credentials
+
+The database seeder provisions verified campus accounts for testing:
+
+| Handle | Role | Rank Tier | Password |
+| :--- | :--- | :--- | :--- |
+| `@SwastikaSinha` | Moderator | Nucleus | `password123` |
+| `@StudentJohn` | Student | Chromosome | `password123` |
+| `@TechGuru` | Contributor | Chromosome | `password123` |
+| `@CampusExplorer` | Contributor | Nucleus | `password123` |
+
+---
+
+## 🧪 API Testing with Postman
+
+Import the provided files in the `postman/` directory:
+1. Open Postman -> Click **Import**.
+2. Select `postman/CampusGenome.postman_collection.json`.
+3. Select `postman/CampusGenome.postman_environment.json`.
+4. Switch your active environment to **CampusGenome Local Dev**.
+5. Execute `POST /api/auth/login` to automatically populate the environment's `jwt_token`.
+
+---
+
+## 📜 License
+Academic project built for Software Engineering & Modeling Laboratory (SEML).

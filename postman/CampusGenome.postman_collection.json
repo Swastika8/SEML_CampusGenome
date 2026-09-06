@@ -1,0 +1,522 @@
+{
+  "info": {
+    "_postman_id": "c85d7b32-e06a-4c28-97c3-3058a98f7e21",
+    "name": "CampusGenome REST API",
+    "description": "Complete Postman testing collection for CampusGenome backend. Contains all endpoints for Auth, Knowledge Nodes, Events, Lifestyle, Career, Academics, Communities, Buildings, Courses, Comments, and Verifications.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01. System Health",
+      "item": [
+        {
+          "name": "API Welcome Message",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "Health Check & Database Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Authentication",
+      "item": [
+        {
+          "name": "Register New Student",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"handle\": \"@NewStudent\",\n  \"name\": \"Rohan Sharma\",\n  \"email\": \"rohan.sharma@campus.edu\",\n  \"password\": \"password123\",\n  \"department\": \"Computer Science\",\n  \"graduationYear\": 2027\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User (Auto-stores Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.environment.set(\"jwt_token\", jsonData.token);",
+                  "    console.log(\"Saved JWT Token to environment:\", jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"loginIdentifier\": \"@StudentJohn\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Profile (/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Knowledge Nodes (Universal)",
+      "item": [
+        {
+          "name": "Get All Knowledge Nodes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Nodes by Category (e.g. Lifestyle)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes?category=Lifestyle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes"],
+              "query": [{ "key": "category", "value": "Lifestyle" }]
+            }
+          }
+        },
+        {
+          "name": "Get Trending Nodes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes?sort=trending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes"],
+              "query": [{ "key": "sort", "value": "trending" }]
+            }
+          }
+        },
+        {
+          "name": "Search Nodes by Keyword",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes?search=maggi",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes"],
+              "query": [{ "key": "search", "value": "maggi" }]
+            }
+          }
+        },
+        {
+          "name": "Get Single Node by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Node - Contribution Modal (Lifestyle)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Lifestyle\",\n  \"spotName\": \"Secret Rooftop Terrace\",\n  \"secret\": \"Access code for the door is 4821. Best spot for watching sunsets.\",\n  \"location\": \"Block D, 5th Floor\",\n  \"tags\": [\"Quiet\", \"Price: Free\", \"Vibe: Chill\"],\n  \"lifestyleCategory\": \"green-spots\",\n  \"pulseStatus\": \"Quiet\",\n  \"pulsePercentage\": 15,\n  \"pulseColor\": \"bg-green-500\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes"]
+            }
+          }
+        },
+        {
+          "name": "Create Node - Contribution Modal (Academics)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Academics\",\n  \"department\": \"CS\",\n  \"year\": \"Final Year\",\n  \"subject\": \"Cloud Computing & DevOps\",\n  \"insight\": \"Focus heavily on Docker multi-stage builds and Kubernetes pod scheduling for the mid-sem test.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Node Verification / Upvote",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes/1/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes", "1", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Get Node Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes/1/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes", "1", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Post Comment on Node",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Tested via Postman! Looking forward to this event.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/nodes/1/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nodes", "1", "comments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Events & News",
+      "item": [
+        {
+          "name": "Get All Events (Formatted for EventsPage)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events"]
+            }
+          }
+        },
+        {
+          "name": "Get Event by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Campus Lifestyle",
+      "item": [
+        {
+          "name": "Get Grouped Lifestyle Spots (Canteens, Green-spots, Housing)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lifestyle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lifestyle"]
+            }
+          }
+        },
+        {
+          "name": "Get Single Lifestyle Spot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lifestyle/6",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lifestyle", "6"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Career & Opportunities",
+      "item": [
+        {
+          "name": "Get All Career Opportunities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/career",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "career"]
+            }
+          }
+        },
+        {
+          "name": "Get Opportunity by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/career/11",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "career", "11"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Academics",
+      "item": [
+        {
+          "name": "Get Academic Insights (All)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/academics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "academics"]
+            }
+          }
+        },
+        {
+          "name": "Get Academic Insights by Dept and Year",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/academics?dept=CS&year=TY",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "academics"],
+              "query": [
+                { "key": "dept", "value": "CS" },
+                { "key": "year", "value": "TY" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Campus Communities",
+      "item": [
+        {
+          "name": "Get All Communities / Clubs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/communities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "communities"]
+            }
+          }
+        },
+        {
+          "name": "Get Community by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/communities/19",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "communities", "19"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Campus Map & Buildings",
+      "item": [
+        {
+          "name": "Get All Buildings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/buildings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buildings"]
+            }
+          }
+        },
+        {
+          "name": "Get Building by ID (e.g. b2 Central Library)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/buildings/b2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buildings", "b2"]
+            }
+          }
+        },
+        {
+          "name": "Add Building History Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"change\": \"Added 10 new laptop charging stations on 2nd floor\",\n  \"author\": \"@StudentJohn\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/buildings/b2/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "buildings", "b2", "history"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Courses",
+      "item": [
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "courses"]
+            }
+          }
+        },
+        {
+          "name": "Add Course Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Great professor! Make sure to submit assignments before Thursday night.\",\n  \"author\": \"@TechGuru\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/c1/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "courses", "c1", "reviews"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Users & Leaderboard",
+      "item": [
+        {
+          "name": "Get Contributor Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/leaderboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "leaderboard"]
+            }
+          }
+        },
+        {
+          "name": "Get User Profile by Handle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/@StudentJohn",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "@StudentJohn"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
