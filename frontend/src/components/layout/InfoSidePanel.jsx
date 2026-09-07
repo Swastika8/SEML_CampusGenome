@@ -69,7 +69,14 @@ export default function InfoSidePanel({ buildingId, onClose }) {
               {expandedSection === 'wifi' && (
                 <div className="p-4 border-t border-gray-200 dark:border-charcoal-700 text-sm text-charcoal-800 dark:text-gray-300 flex flex-col gap-2">
                   <p>{building.details.wifi}</p>
-                  <EngagementBar verifyCount={42} commentCount={5} repostCount={1} />
+                  <EngagementBar 
+                    nodeId={`b_${building.id}_wifi`}
+                    itemTitle={`${building.name} - Wi-Fi Intel`}
+                    category="Campus Map"
+                    verifyCount={42} 
+                    commentCount={5} 
+                    repostCount={1} 
+                  />
                 </div>
               )}
             </div>
@@ -90,7 +97,14 @@ export default function InfoSidePanel({ buildingId, onClose }) {
               {expandedSection === 'quiet' && (
                 <div className="p-4 border-t border-gray-200 dark:border-charcoal-700 text-sm text-charcoal-800 dark:text-gray-300 flex flex-col gap-2">
                   <p>{building.details.quietSpots}</p>
-                  <EngagementBar verifyCount={18} commentCount={2} repostCount={0} />
+                  <EngagementBar 
+                    nodeId={`b_${building.id}_quiet`}
+                    itemTitle={`${building.name} - Quiet Study Spots`}
+                    category="Campus Map"
+                    verifyCount={18} 
+                    commentCount={2} 
+                    repostCount={0} 
+                  />
                 </div>
               )}
             </div>
@@ -116,11 +130,25 @@ export default function InfoSidePanel({ buildingId, onClose }) {
             <ul className="text-sm text-charcoal-700 dark:text-gray-300 space-y-4 mt-2">
               <li className="flex flex-col border-b border-gray-100 dark:border-charcoal-800 pb-2">
                 <span className="font-medium">Campus Cafe</span>
-                <EngagementBar verifyCount={89} commentCount={14} repostCount={3} />
+                <EngagementBar 
+                  nodeId="b_amenity_cafe"
+                  itemTitle="Campus Cafe & Bistro"
+                  category="Amenities"
+                  verifyCount={89} 
+                  commentCount={14} 
+                  repostCount={3} 
+                />
               </li>
               <li className="flex flex-col border-b border-gray-100 dark:border-charcoal-800 pb-2">
                 <span className="font-medium">Vending Machines (2nd Floor)</span>
-                <EngagementBar verifyCount={12} commentCount={0} repostCount={1} />
+                <EngagementBar 
+                  nodeId="b_amenity_vending"
+                  itemTitle="Vending Machines (2nd Floor)"
+                  category="Amenities"
+                  verifyCount={12} 
+                  commentCount={0} 
+                  repostCount={1} 
+                />
               </li>
             </ul>
           </div>

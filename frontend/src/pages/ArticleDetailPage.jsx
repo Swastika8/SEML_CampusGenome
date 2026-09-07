@@ -119,6 +119,9 @@ export default function ArticleDetailPage() {
             {/* Engagement Footer */}
             <div className="mt-8">
               <EngagementBar 
+                nodeId={article.id}
+                itemTitle={article.title}
+                category="Events"
                 verifyCount={article.verifyCount}
                 commentCount={article.commentCount}
                 repostCount={article.repostCount || 12}

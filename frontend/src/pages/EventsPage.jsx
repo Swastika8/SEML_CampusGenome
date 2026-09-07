@@ -92,7 +92,16 @@ const TypeA = ({ item }) => (
         
         <div className="opacity-0 group-hover:opacity-100 transition-all duration-700 ease-out flex justify-between items-end">
            <div className="[&_span]:text-white/90 [&_svg]:text-white/80 [&_button:hover]:bg-white/20">
-             <EngagementBar verifyCount={item.verifyCount} commentCount={item.commentCount} variant="like" hideRepost={true} className="pt-2 border-white/20" />
+             <EngagementBar 
+               nodeId={item.id}
+               itemTitle={item.title}
+               category="Events"
+               verifyCount={item.verifyCount} 
+               commentCount={item.commentCount} 
+               variant="like" 
+               hideRepost={false} 
+               className="pt-2 border-white/20" 
+             />
            </div>
         </div>
       </div>
@@ -161,7 +170,15 @@ const TypeC = ({ item }) => (
         </h3>
         {/* Tightly packed engagement bottom-left */}
         <div className="[&_span]:text-white/70 [&_span]:text-xs [&_svg]:w-4 [&_svg]:h-4 [&_svg]:text-white/60 [&_button]:p-1 -ml-1">
-          <EngagementBar verifyCount={item.verifyCount} commentCount={item.commentCount} variant="like" hideRepost={true} />
+          <EngagementBar 
+            nodeId={item.id}
+            itemTitle={item.title}
+            category="Events"
+            verifyCount={item.verifyCount} 
+            commentCount={item.commentCount} 
+            variant="like" 
+            hideRepost={false} 
+          />
         </div>
       </div>
     </div>

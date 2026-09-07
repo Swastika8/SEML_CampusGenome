@@ -231,9 +231,12 @@ export default function LifestylePage() {
                         {/* Action Bar */}
                         <div className="flex flex-col xl:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-200 dark:border-white/10">
                           <EngagementBar 
+                            nodeId={item.id || item.node_id}
+                            itemTitle={item.name}
+                            category="Lifestyle"
                             verifyCount={item.verifiedBy} 
                             commentCount={item.comments} 
-                            hideRepost 
+                            hideRepost={false} 
                             className="border-none mt-0 pt-0 w-full xl:w-auto"
                           />
                           <button className="flex items-center gap-2 rounded-full px-6 py-2.5 bg-charcoal-900 text-white dark:bg-gold-500 dark:text-midnight-900 font-bold text-sm hover:scale-105 transition-transform shadow-md w-full xl:w-auto justify-center shrink-0">

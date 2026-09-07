@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Users, Calendar, ArrowRight } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import EngagementBar from '../components/common/EngagementBar';
 
 const mockClubs = [
   {
@@ -105,8 +106,19 @@ export default function CommunitiesPage() {
                       <span>{club.nextMeeting}</span>
                     </div>
                   </div>
+
+                  <EngagementBar 
+                    nodeId={club.id ? (club.id >= 19 ? club.id : club.id + 18) : 19}
+                    itemTitle={club.name}
+                    category="Communities"
+                    verifyCount={club.members ? Math.floor(club.members / 3) : 24}
+                    commentCount={8}
+                    repostCount={3}
+                    variant="like"
+                    className="mt-4 pt-3"
+                  />
                   
-                  <button className="mt-6 w-full py-2.5 bg-gray-100 dark:bg-white/5 text-charcoal-900 dark:text-gray-100 font-medium rounded-xl flex items-center justify-center gap-2 group-hover:bg-gold-500 group-hover:text-midnight-900 transition-colors">
+                  <button className="mt-4 w-full py-2.5 bg-gray-100 dark:bg-white/5 text-charcoal-900 dark:text-gray-100 font-medium rounded-xl flex items-center justify-center gap-2 group-hover:bg-gold-500 group-hover:text-midnight-900 transition-colors">
                     Join Community <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>

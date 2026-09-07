@@ -142,9 +142,12 @@ export default function AcademicsPage() {
               {post.content}
             </p>
             <EngagementBar 
-              verifyCount={post.verifiedBy} 
-              commentCount={post.comments} 
-              repostCount={post.reposts} 
+              nodeId={post.id || post.node_id} 
+              itemTitle={post.title}
+              category={`Academics · ${selectedDept}`}
+              verifyCount={post.verifiedBy || post.verification_count || 42} 
+              commentCount={post.comments || post.comment_count || 5} 
+              repostCount={post.reposts || 3} 
             />
           </div>
         ))}

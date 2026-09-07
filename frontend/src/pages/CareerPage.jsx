@@ -152,10 +152,13 @@ export default function CareerPage() {
                   {/* Engagement UI Tucked at Bottom */}
                   <div className="mt-auto pt-4 border-t border-gray-200 dark:border-white/10">
                     <EngagementBar 
+                      nodeId={opp.id || opp.node_id}
+                      itemTitle={`${opp.role} (${opp.company})`}
+                      category="Career"
                       verifyCount={opp.verifyCount} 
                       commentCount={opp.commentCount} 
                       variant="like" 
-                      hideRepost={true} 
+                      hideRepost={false} 
                     />
                   </div>
                 </div>
