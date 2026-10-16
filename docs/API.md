@@ -77,6 +77,6 @@ Read-only category endpoints remain available at `/academics`, `/career`, `/comm
 
 ## Operational configuration
 
-The default API rate limit is 300 requests per IP per minute (`API_RATE_LIMIT`), with a separate limit of 50 authentication writes per 15 minutes. The browser suite sets a higher API limit only for its isolated test server to accommodate repeated full-page reloads. Limits use a process-local store. Origins are explicitly configured through `CORS_ORIGINS`. Do not enable arbitrary proxy trust; configure it for your actual deployment topology if a reverse proxy is introduced.
+The default API rate limit is 300 requests per IP per minute (`API_RATE_LIMIT`), with a separate limit of 50 authentication writes per 15 minutes. The browser suite sets a higher API limit only for its isolated test server to accommodate repeated full-page reloads. Limits use a process-local store. Origins are explicitly configured through `CORS_ORIGINS`. `TRUST_PROXY_HOPS` accepts an integer from 0 to 5 and defaults to 0. Set it to the verified proxy hop count for your deployment topology; do not enable arbitrary proxy trust.
 
 Native PostgreSQL migrations are additive at startup. Demo data is loaded only in explicit demo mode when its database is empty, or by the deliberately invoked seed command. Database files, `.env` files and credentials are excluded from version control.

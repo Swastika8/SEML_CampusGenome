@@ -59,6 +59,8 @@ Tailwind uses its updated Vite integration with the original theme configuration
 
 ## Use standard PostgreSQL
 
+For hosted deployment, follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). It includes the Vercel frontend and Render API/database settings, environment variables and verification steps.
+
 1. Configure `backend/.env` from `backend/.env.example`. Supply PostgreSQL credentials (or `DATABASE_URL`), `DB_MODE=postgres`, and a unique JWT secret.
 2. Initialize the database and additive schema:
 

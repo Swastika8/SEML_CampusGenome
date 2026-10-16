@@ -19,6 +19,11 @@ import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 app.disable('x-powered-by');
+const proxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+if (!Number.isInteger(proxyHops) || proxyHops < 0 || proxyHops > 5) {
+  throw new Error('TRUST_PROXY_HOPS must be an integer from 0 to 5.');
+}
+if (proxyHops) app.set('trust proxy', proxyHops);
 app.use((req, res, next) => {
   req.id = randomUUID();
   res.setHeader('X-Request-ID', req.id);
