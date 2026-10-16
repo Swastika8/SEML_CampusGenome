@@ -1,181 +1,242 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Joyride } from 'react-joyride';
-import { HelpCircle, Sparkles, CheckCircle2, Clock, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {
+  HelpCircle,
+  ArrowUpRight,
+  Sparkles,
+  Feather,
+  Coffee,
+  CalendarDays,
+  Pin,
+  Dna,
+} from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import HeroMessage from '../components/dashboard/HeroMessage';
+import CampusCapsule from '../components/dashboard/CampusCapsule';
+import CampusFeed from '../components/dashboard/CampusFeed';
 import Ticker from '../components/dashboard/Ticker';
-import ContributorList from '../components/dashboard/ContributorList';
-import ContributionWizard from '../components/modules/ContributionWizard';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { useContribution } from '../context/ContributionContext';
 
 export default function Dashboard() {
   const [runTour, setRunTour] = useState(false);
-  const [activeTab, setActiveTab] = useState('insights');
   const { theme } = useTheme();
-  const { nodes, events, lifestyle, career, communities } = useData();
-
-  const steps = [
-    {
-      target: '.tour-search',
-      content: 'Start your journey here. Search for courses, professors, or hidden campus spots.',
-      disableBeacon: true,
-    },
-    {
-      target: '.tour-theme-toggle',
-      content: 'Switch between light and dark modes for late-night study sessions.',
-    }
-  ];
-
+  const { user } = useAuth();
+  const { stats, users, health } = useData();
+  const { openWizard } = useContribution();
+  const navigate = useNavigate();
+  const top = [...users]
+    .sort(
+      (a, b) =>
+        (b.reputation_score ?? b.reputation ?? 0) - (a.reputation_score ?? a.reputation ?? 0),
+    )
+    .slice(0, 3);
+  function compose(type = 'Academics') {
+    if (user) openWizard({ type });
+    else navigate('/login');
+  }
   return (
     <DashboardLayout>
-      <Joyride 
-        steps={steps} 
+      <Joyride
+        steps={[
+          {
+            target: '.tour-search',
+            content:
+              'Start your journey here. Search for courses, professors, or hidden campus spots.',
+            skipBeacon: true,
+          },
+          {
+            target: '.tour-theme-toggle',
+            content: 'Switch between light and dark modes for late-night study sessions.',
+          },
+        ]}
         run={runTour}
-        continuous 
-        showSkipButton 
-        styles={{
-          options: {
-            primaryColor: '#D4AF37',
-            backgroundColor: theme === 'dark' ? '#0B1120' : '#ffffff',
-            textColor: theme === 'dark' ? '#F3F4F6' : '#111827',
-            arrowColor: theme === 'dark' ? '#0B1120' : '#ffffff',
-          }
+        continuous
+        options={{
+          buttons: ['back', 'close', 'primary', 'skip'],
+          primaryColor: '#D4AF37',
+          backgroundColor: theme === 'dark' ? '#0B1120' : '#fff',
+          textColor: theme === 'dark' ? '#F3F4F6' : '#111827',
+          arrowColor: theme === 'dark' ? '#0B1120' : '#fff',
         }}
-        callback={(data) => {
-          if (data.status === 'finished' || data.status === 'skipped') {
-            setRunTour(false);
-          }
+        onEvent={(data) => {
+          if (['finished', 'skipped'].includes(data.status)) setRunTour(false);
         }}
       />
-      
-      <div className="flex-1 flex flex-col min-w-0 relative h-full">
-        <div className="flex-1 flex flex-col lg:flex-row gap-8 mt-4 mb-8">
-          
-          {/* Left Column (Hero & Contributors) */}
-          <div className="flex-1 flex flex-col justify-between">
-            <HeroMessage />
-            <div className="hidden lg:block mt-auto pb-8">
-              <ContributorList />
-            </div>
-          </div>
-
-          {/* Right Column (Global Campus Overview Panel) */}
-          <div className="flex-[1.2] relative flex items-start justify-center lg:justify-end animate-fade-in-up">
-            <div className="w-full max-w-lg m-6 bg-white/40 dark:bg-[#111827]/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl rounded-3xl p-6 flex flex-col">
-              <div className="mb-6">
-                <h2 className="font-serif text-3xl font-bold text-charcoal-900 dark:text-gray-100 mb-2 tracking-tight">Global Campus Overview</h2>
-                <p className="text-sm text-charcoal-700 dark:text-gray-400">Discover insights and recent activity across the network.</p>
-              </div>
-              
-              {/* Segmented Control Tabs */}
-              <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-lg mb-6 w-fit">
-                <button 
-                  onClick={() => setActiveTab('insights')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                    activeTab === 'insights' 
-                      ? 'bg-white dark:bg-midnight-800 shadow-sm text-charcoal-900 dark:text-gold-400' 
-                      : 'text-charcoal-600 dark:text-gray-400 hover:text-charcoal-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Insights
-                </button>
-                <button 
-                  onClick={() => setActiveTab('activity')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                    activeTab === 'activity' 
-                      ? 'bg-white dark:bg-midnight-800 shadow-sm text-charcoal-900 dark:text-gold-400' 
-                      : 'text-charcoal-600 dark:text-gray-400 hover:text-charcoal-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Activity
-                </button>
-              </div>
-
-              {/* Data List */}
-              <div className="flex flex-col">
-                {activeTab === 'insights' ? (
-                  <>
-                    <div className="flex items-center justify-between py-3 border-b border-gray-400/20 last:border-0">
-                      <span className="text-charcoal-600 dark:text-gray-300 font-medium text-sm">Active Nodes</span>
-                      <div className="flex items-center">
-                        <span className="font-bold text-charcoal-900 dark:text-gray-100 font-mono">
-                          {nodes && nodes.length > 0 ? (nodes.length + 1240).toLocaleString() : '1,245'}
-                        </span>
-                        <span className="text-green-600 dark:text-green-400 text-xs font-bold ml-2 bg-green-500/10 px-1.5 py-0.5 rounded">↑ 12%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b border-gray-400/20 last:border-0">
-                      <span className="text-charcoal-600 dark:text-gray-300 font-medium text-sm">Total Contributions</span>
-                      <div className="flex items-center">
-                        <span className="font-bold text-charcoal-900 dark:text-gray-100 font-mono">
-                          {nodes && nodes.length > 0 ? (nodes.length + 4090).toLocaleString() : '4,092'}
-                        </span>
-                        <span className="text-green-600 dark:text-green-400 text-xs font-bold ml-2 bg-green-500/10 px-1.5 py-0.5 rounded">↑ 8%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b border-gray-400/20 last:border-0">
-                      <span className="text-charcoal-600 dark:text-gray-300 font-medium text-sm">Verified Secrets</span>
-                      <div className="flex items-center">
-                        <span className="font-bold text-charcoal-900 dark:text-gray-100 font-mono">830</span>
-                        <span className="text-green-600 dark:text-green-400 text-xs font-bold ml-2 bg-green-500/10 px-1.5 py-0.5 rounded">↑ 24%</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b border-gray-400/20 last:border-0">
-                      <span className="text-charcoal-600 dark:text-gray-300 font-medium text-sm">Network Health</span>
-                      <div className="flex items-center">
-                        <span className="font-bold text-charcoal-900 dark:text-gray-100 font-mono">99.8%</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium ml-2 bg-emerald-500/10 px-1.5 py-0.5 rounded">Live & Healthy</span>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col gap-3 py-1">
-                    {(nodes && nodes.length > 0 ? nodes.slice(0, 4) : [
-                      { id: 'm1', title: 'Midnight Maggi Exam Special Tip', category: 'Lifestyle', author_handle: '@StudentJohn', created_at: '2h ago' },
-                      { id: 'm2', title: 'Data Structures FY PYQ Solutions', category: 'Academics', author_handle: '@SwastikaSinha', created_at: '4h ago' },
-                      { id: 'm3', title: 'Google Summer Placement Drive 2026', category: 'Career', author_handle: '@TechGuru', created_at: '6h ago' },
-                      { id: 'm4', title: 'CampusHack 2026 Hackathon Registration', category: 'Events', author_handle: '@CampusExplorer', created_at: '1d ago' },
-                    ]).map((item, idx) => (
-                      <div key={item.id || idx} className="p-2.5 rounded-xl bg-white/40 dark:bg-white/5 border border-gray-200/50 dark:border-white/5 flex flex-col gap-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-gold-400/20 text-gold-700 dark:text-gold-300">
-                            {item.category}
-                          </span>
-                          <span className="text-[10px] text-gray-400">
-                            {item.created_at ? (item.created_at.includes('ago') ? item.created_at : new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : 'Recently'}
-                          </span>
-                        </div>
-                        <p className="text-xs font-semibold text-charcoal-900 dark:text-gray-200 truncate">
-                          {item.title}
-                        </p>
-                        <span className="text-[11px] text-charcoal-500 dark:text-gray-400 truncate">
-                          by <span className="font-medium text-gold-600 dark:text-gold-400">{item.author_handle || item.author_name || '@StudentJohn'}</span>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+      <section className="common-room-hero">
+        <div className="hero-stamp">
+          <span />
+          UNOFFICIAL. UNFILTERED. UNMISTAKABLY CAMPUS.
+        </div>
+        <div className="hero-copy">
+          <h2>
+            Every college has
+            <br />
+            hidden knowledge.
+          </h2>
+          <p>
+            We're building its DNA. <span>You bring the lore.</span>
+          </p>
+          <div className="hero-footnote">
+            <span>✦</span> The shortcuts, the chai spots, the “wish someone told me” stuff.
           </div>
         </div>
-
-        <div className="mt-auto">
-          <Ticker />
+        <div className="hero-doodle" aria-hidden="true">
+          <div className="doodle-orbit" />
+          <span className="doodle-star star-one">✳</span>
+          <span className="doodle-star star-two">✧</span>
+          <div className="doodle-note">
+            the syllabus
+            <br />
+            didn't cover
+            <br />
+            <em>this.</em>
+            <svg viewBox="0 0 140 20">
+              <path d="M4 12Q62 1 135 13M20 17Q79 8 118 16" />
+            </svg>
+          </div>
+          <div className="doodle-seal">
+            <Dna size={21} />
+            <span>
+              100%
+              <br />
+              STUDENT DNA
+            </span>
+          </div>
+        </div>
+      </section>
+      <div className="common-room-grid">
+        <div className="feed-column">
+          <section className="post-composer" aria-label="Share campus lore">
+            <span className="composer-avatar">
+              {user?.name?.slice(0, 1) || <Feather size={19} />}
+            </span>
+            <button className="composer-prompt" onClick={() => compose()}>
+              Know something the campus should?
+            </button>
+            <button
+              className="composer-plus"
+              onClick={() => compose()}
+              aria-label="Create a campus post"
+            >
+              +
+            </button>
+            <div className="composer-options">
+              <button onClick={() => compose('Academics')}>
+                <Feather size={14} />
+                Share a shortcut
+              </button>
+              <button onClick={() => compose('Events')}>
+                <CalendarDays size={14} />
+                Drop an event
+              </button>
+              <button onClick={() => compose('Lifestyle')}>
+                <Coffee size={14} />
+                Found a spot?
+              </button>
+            </div>
+          </section>
+          <CampusFeed />
+        </div>
+        <div className="campus-rail">
+          <section className="rail-about">
+            <div className="rail-cover">
+              <span>g/campus</span>
+              <Sparkles size={32} strokeWidth={1.2} />
+            </div>
+            <div className="rail-about-body">
+              <div className="rail-kicker">
+                <span className="status-dot" /> THE COMMON ROOM
+              </div>
+              <h3>
+                For the plot.
+                <br />
+                <em>And the people.</em>
+              </h3>
+              <p>Your campus, as told by the people actually surviving it. Pull up a chair.</p>
+              <div className="rail-stats">
+                <span>
+                  <strong>{stats.students ?? 0}</strong>campus humans
+                </span>
+                <span>
+                  <strong>{stats.contributions ?? 0}</strong>bits of lore
+                </span>
+              </div>
+              <small className="rail-status">
+                {health?.mode === 'demo'
+                  ? 'Sample campus · real interactions'
+                  : 'Made by students, for students'}
+              </small>
+              <button className="button button-primary full-width" onClick={() => compose()}>
+                Leave a little lore <ArrowUpRight size={15} />
+              </button>
+            </div>
+          </section>
+          <section className="rail-pinboard">
+            <Pin size={19} />
+            <span>PINNED BY THE COLLECTIVE</span>
+            <h3>
+              The good kind
+              <br />
+              of campus chaos.
+            </h3>
+            <ol>
+              <li>Help a junior. Credit a senior.</li>
+              <li>Check the intel before you pass it on.</li>
+              <li>Keep the people behind the handles safe.</li>
+            </ol>
+            <div className="pinboard-scribble">kindness is a campus flex ↗</div>
+          </section>
+          <section className="rail-regulars">
+            <div className="rail-title">
+              <h3>Common room regulars</h3>
+              <span>✦</span>
+            </div>
+            {top.map((person, index) => (
+              <div className="regular-row" key={person.id}>
+                <span className="regular-number">0{index + 1}</span>
+                <span className="regular-avatar">{person.name?.slice(0, 1)}</span>
+                <div>
+                  <strong>{person.name}</strong>
+                  <small>{person.handle}</small>
+                </div>
+                <span className="regular-score">
+                  {person.reputation_score ?? person.reputation ?? 0}
+                  <small>karma</small>
+                </span>
+              </div>
+            ))}
+            <p>Earned by sharing useful things.</p>
+          </section>
+          <Link to="/map" className="rail-map">
+            <span>↝</span>
+            <div>
+              <small>TAKE THE SCENIC ROUTE</small>
+              <strong>Get lost. Find a new spot.</strong>
+            </div>
+            <ArrowUpRight size={19} />
+          </Link>
+          <button
+            className="tour-link"
+            aria-label="Take a campus tour"
+            onClick={() => setRunTour(true)}
+          >
+            <HelpCircle size={15} />
+            New here? Take the two-stop tour.
+          </button>
         </div>
       </div>
-      
-      <ContributionWizard />
-
-      {/* Walkthrough FAB */}
-      <button 
-        onClick={() => setRunTour(true)}
-        className="fixed bottom-6 right-6 z-50 p-4 bg-gold-400 dark:bg-gold-500 text-midnight-900 rounded-full shadow-2xl hover:bg-gold-500 dark:hover:bg-gold-400 transition-transform transform hover:scale-110 flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-gold-500/30"
-      >
-        <HelpCircle size={28} />
-      </button>
+      <div className="curiosity-divider">
+        <span>✳</span>
+        <p>A rabbit hole, just for you.</p>
+        <small>Curiosity looks good on you.</small>
+      </div>
+      <CampusCapsule />
+      <div className="common-room-ticker">
+        <Ticker />
+      </div>
     </DashboardLayout>
   );
 }

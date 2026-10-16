@@ -1,18 +1,24 @@
+import { API_BASE } from '../lib/api';
 import { useState, useEffect } from 'react';
-import { User, Medal, ArrowLeft, GitCommit, CheckCircle, MapPin, Sparkles, BookOpen, LogOut } from 'lucide-react';
+import { Medal, ArrowLeft, GitCommit, Sparkles, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [profileData, setProfileData] = useState(null);
   const [contributions, setContributions] = useState([]);
 
   useEffect(() => {
-    const handleOrId = user?.handle || user?.id || '@StudentJohn';
-    fetch(`http://localhost:5000/api/users/${encodeURIComponent(handleOrId)}`)
+    if (!user) {
+      setProfileData(null);
+      setContributions([]);
+      return;
+    }
+    const handleOrId = user.handle || user.id;
+    fetch(`${API_BASE}/users/${encodeURIComponent(handleOrId)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((res) => {
         if (res && res.data) {
@@ -25,24 +31,30 @@ export default function Profile() {
       .catch((err) => console.warn('Could not load user profile:', err));
   }, [user]);
 
-  const activeUser = profileData || user || {
-    name: 'Swastika Sinha',
-    handle: '@SwastikaSinha',
-    department: 'Information Technology',
-    graduation_year: 2028,
-    reputation_score: 320,
-    rank: 'Nucleus'
-  };
+  const activeUser = profileData ||
+    user || {
+      name: 'Campus Explorer',
+      handle: '@YourNextChapter',
+      department: 'Your campus story starts here',
+      graduation_year: 2028,
+      reputation_score: 0,
+      rank: 'Guest',
+    };
 
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
   const initial = activeUser.name ? activeUser.name.charAt(0).toUpperCase() : 'S';
 
   return (
     <DashboardLayout>
       <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 animate-fade-in-up py-6 px-4">
-
         {/* Navigation */}
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-charcoal-600 dark:text-gray-400 hover:text-gold-500 dark:hover:text-gold-400 transition-colors font-medium text-sm">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-charcoal-600 dark:text-gray-400 hover:text-gold-500 dark:hover:text-gold-400 transition-colors font-medium text-sm"
+          >
             <ArrowLeft size={18} />
             <span>Back to Campus Map</span>
           </Link>
@@ -59,7 +71,10 @@ export default function Profile() {
               <span>Log Out</span>
             </button>
           ) : (
-            <Link to="/login" className="text-xs font-bold text-gold-600 dark:text-gold-400 hover:underline">
+            <Link
+              to="/login"
+              className="text-xs font-bold text-gold-600 dark:text-gold-400 hover:underline"
+            >
               Sign In with an account →
             </Link>
           )}
@@ -82,7 +97,7 @@ export default function Profile() {
                 {activeUser.handle}
               </span>
             </div>
-            
+
             <p className="text-base text-charcoal-600 dark:text-gray-400 font-sans mt-1 mb-6">
               {activeUser.department} • Class of {activeUser.graduation_year || 2026}
             </p>
@@ -91,7 +106,9 @@ export default function Profile() {
               <div className="flex items-center gap-3 bg-gold-500/10 dark:bg-gold-400/10 border border-gold-500/30 px-4 py-2.5 rounded-2xl">
                 <Medal className="text-gold-500" size={24} />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-gold-600 dark:text-gold-400 uppercase tracking-wider font-bold">Rank & Tier</span>
+                  <span className="text-[10px] text-gold-600 dark:text-gold-400 uppercase tracking-wider font-bold">
+                    Rank & Tier
+                  </span>
                   <span className="text-base font-serif font-bold text-charcoal-900 dark:text-gray-100">
                     {activeUser.rank} Tier
                   </span>
@@ -101,7 +118,9 @@ export default function Profile() {
               <div className="flex items-center gap-3 bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/30 px-4 py-2.5 rounded-2xl">
                 <Sparkles className="text-blue-500" size={24} />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">Reputation Score</span>
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400 uppercase tracking-wider font-bold">
+                    Reputation Score
+                  </span>
                   <span className="text-base font-serif font-bold text-charcoal-900 dark:text-gray-100">
                     {activeUser.reputation_score ?? 140} DNA Points
                   </span>
@@ -111,6 +130,36 @@ export default function Profile() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <Link
+            to="/saved"
+            className="p-6 rounded-3xl bg-white/50 dark:bg-white/5 border border-gold-400/30 backdrop-blur-xl hover:-rotate-1 transition-transform"
+          >
+            <span className="text-xs text-gold-600 dark:text-gold-400 uppercase tracking-widest">
+              Your pocket universe
+            </span>
+            <h2 className="font-serif text-3xl mt-2 text-charcoal-900 dark:text-white">
+              {user?.saved_count ?? 0} little discoveries
+            </h2>
+            <p className="text-sm text-charcoal-500 dark:text-gray-400 mt-2">
+              All the strands you wanted to keep. Open your pocket →
+            </p>
+          </Link>
+          <Link
+            to="/events"
+            className="p-6 rounded-3xl bg-white/50 dark:bg-white/5 border border-gold-400/30 backdrop-blur-xl hover:rotate-1 transition-transform"
+          >
+            <span className="text-xs text-gold-600 dark:text-gold-400 uppercase tracking-widest">
+              Outside the timetable
+            </span>
+            <h2 className="font-serif text-3xl mt-2 text-charcoal-900 dark:text-white">
+              {user?.rsvp_count ?? 0} campus adventures
+            </h2>
+            <p className="text-sm text-charcoal-500 dark:text-gray-400 mt-2">
+              A few yeses to something different. Find your next one →
+            </p>
+          </Link>
+        </div>
         {/* Contributions Genome */}
         <div className="bg-white/80 dark:bg-midnight-800/80 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-3xl p-8 shadow-xl">
           <div className="flex items-center justify-between mb-6">
@@ -125,7 +174,8 @@ export default function Profile() {
 
           {contributions.length === 0 ? (
             <div className="text-center py-12 text-charcoal-500 dark:text-gray-400 italic">
-              No campus contributions recorded yet. Use the "+ Contribute" button to publish your first knowledge node!
+              No campus contributions recorded yet. Use the "+ Contribute" button to publish your
+              first knowledge node!
             </div>
           ) : (
             <div className="relative border-l-2 border-gray-200 dark:border-charcoal-700 ml-4 pl-8 flex flex-col gap-8">
@@ -163,7 +213,6 @@ export default function Profile() {
             </div>
           )}
         </div>
-
       </div>
     </DashboardLayout>
   );

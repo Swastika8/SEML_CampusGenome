@@ -1,135 +1,93 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import pool from '../config/db.js';
+import pool, { isDemo } from '../config/db.js';
+import { jwtSecret, jwtOptions } from '../config/security.js';
 
-const generateToken = (user) => {
-  return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || 'dev_jwt_secret_change_me',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  );
+export const generateToken = (user) =>
+  jwt.sign({ id: user.id }, jwtSecret, {
+    algorithm: 'HS256',
+    issuer: jwtOptions.issuer,
+    audience: jwtOptions.audience,
+    expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+  });
+const publicUser = (user) => {
+  const { password_hash, ...safe } = user;
+  return safe;
 };
-
+const session = (res, user, status = 200) =>
+  res.status(status).json({ success: true, token: generateToken(user), user: publicUser(user) });
 export const register = async (req, res, next) => {
   try {
-    const { handle, name, email, password, department, graduationYear } = req.body;
-
-    if (!handle || !name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Handle, name, email, and password are required.',
-      });
-    }
-
-    const formattedHandle = handle.startsWith('@') ? handle : `@${handle}`;
-
-    // Check if handle or email already exists
+    const { name, handle, email, password, department, graduationYear } = req.body;
+    const formattedHandle = '@' + handle.replace(/^@/, '');
     const existing = await pool.query(
-      'SELECT id FROM users WHERE email = $1 OR handle = $2',
-      [email.toLowerCase(), formattedHandle]
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(handle) = LOWER($2)',
+      [email, formattedHandle],
     );
-
-    if (existing.rows.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message: 'A user with that email or handle already exists.',
-      });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const newUser = await pool.query(
-      `INSERT INTO users (handle, name, email, password_hash, department, graduation_year, reputation_score, rank, role)
-       VALUES ($1, $2, $3, $4, $5, $6, 10, 'Helix', 'student')
-       RETURNING id, handle, name, email, department, graduation_year, reputation_score, rank, role, created_at`,
-      [formattedHandle, name, email.toLowerCase(), passwordHash, department || 'General', graduationYear || 2026]
+    if (existing.rows.length)
+      return res
+        .status(409)
+        .json({ success: false, message: 'That email or handle is already in use.' });
+    const hash = await bcrypt.hash(password, 12);
+    const result = await pool.query(
+      'INSERT INTO users (name, handle, email, password_hash, department, graduation_year, reputation_score) VALUES ($1,$2,$3,$4,$5,$6,0) RETURNING *',
+      [
+        name,
+        formattedHandle,
+        email,
+        hash,
+        department || 'General',
+        graduationYear || new Date().getFullYear() + 4,
+      ],
     );
-
-    const user = newUser.rows[0];
-    const token = generateToken(user);
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully.',
-      token,
-      user,
-    });
+    session(res, result.rows[0], 201);
   } catch (err) {
     next(err);
   }
 };
-
 export const login = async (req, res, next) => {
   try {
-    const loginIdentifier = req.body.loginIdentifier || req.body.email || req.body.handle;
-    const { password } = req.body;
-
-    if (!loginIdentifier || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email/handle and password are required.',
-      });
-    }
-
-    const userRes = await pool.query(
-      `SELECT * FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(handle) = LOWER($1)`,
-      [loginIdentifier]
+    const { loginIdentifier, password } = req.body;
+    const result = await pool.query(
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(handle) = LOWER($1)',
+      [loginIdentifier],
     );
-
-    if (userRes.rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials.',
-      });
-    }
-
-    const user = userRes.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials.',
-      });
-    }
-
-    const token = generateToken(user);
-
-    // Omit password_hash
-    delete user.password_hash;
-
-    res.status(200).json({
-      success: true,
-      message: 'Login successful.',
-      token,
-      user,
-    });
+    const user = result.rows[0];
+    // Fixed dummy hash keeps unknown-user and wrong-password work comparable.
+    const valid = await bcrypt.compare(
+      password,
+      user?.password_hash || '$2b$10$fthrhnYe0zH53fBEQnp4Fe346WJR/Ce7rKdsc/RtrE8uT1JezZ1eq',
+    );
+    if (!user || !valid)
+      return res
+        .status(401)
+        .json({ success: false, message: 'Email, handle or password is incorrect.' });
+    session(res, user);
   } catch (err) {
     next(err);
   }
 };
-
+export const demoLogin = async (req, res, next) => {
+  if (!isDemo)
+    return res.status(404).json({ success: false, message: 'Demo access is not enabled.' });
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE handle = '@StudentJohn'");
+    session(res, result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+};
 export const getMe = async (req, res, next) => {
   try {
-    const userRes = await pool.query(
-      `SELECT u.id, u.handle, u.name, u.email, u.department, u.graduation_year, 
-              u.reputation_score, u.rank, u.role, u.avatar_url, u.created_at,
-              (SELECT COUNT(*) FROM knowledge_nodes WHERE user_id = u.id) AS contribution_count,
-              (SELECT COUNT(*) FROM verifications WHERE user_id = u.id) AS verified_actions_count
-       FROM users u WHERE u.id = $1`,
-      [req.user.id]
+    const result = await pool.query(
+      `SELECT u.*,
+      (SELECT COUNT(*)::int FROM knowledge_nodes WHERE user_id=u.id AND status!='Removed') AS contribution_count,
+      (SELECT COUNT(*)::int FROM bookmarks WHERE user_id=u.id) AS saved_count,
+      (SELECT COUNT(*)::int FROM event_attendees WHERE user_id=u.id) AS rsvp_count
+      FROM users u WHERE u.id=$1`,
+      [req.user.id],
     );
-
-    if (userRes.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-
-    res.status(200).json({
-      success: true,
-      user: userRes.rows[0],
-    });
+    res.json({ success: true, user: publicUser(result.rows[0]) });
   } catch (err) {
     next(err);
   }

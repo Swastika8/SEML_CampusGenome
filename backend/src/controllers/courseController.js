@@ -42,7 +42,7 @@ export const getCourseById = async (req, res, next) => {
           'reviews', reviews
         ) AS details
        FROM courses WHERE id = $1`,
-      [id]
+      [id],
     );
 
     if (courseRes.rows.length === 0) {
@@ -62,7 +62,7 @@ export const addCourseReview = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
-    const author = req.user?.handle || req.body.author || '@Student';
+    const author = req.user.handle;
 
     if (!content) {
       return res.status(400).json({ success: false, message: 'Review content is required.' });
@@ -71,7 +71,7 @@ export const addCourseReview = async (req, res, next) => {
     const newReview = {
       author,
       content,
-      verified: true,
+      verified: false,
       createdAt: new Date().toISOString(),
     };
 
@@ -80,7 +80,7 @@ export const addCourseReview = async (req, res, next) => {
        SET reviews = reviews || $1::jsonb 
        WHERE id = $2
        RETURNING id, code, name, reviews;`,
-      [JSON.stringify([newReview]), id]
+      [JSON.stringify([newReview]), id],
     );
 
     if (updateRes.rows.length === 0) {

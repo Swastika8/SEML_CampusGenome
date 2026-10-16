@@ -146,3 +146,21 @@ CREATE INDEX IF NOT EXISTS idx_academic_dept_year ON academic_nodes(department, 
 CREATE INDEX IF NOT EXISTS idx_lifestyle_cat ON lifestyle_nodes(lifestyle_category);
 CREATE INDEX IF NOT EXISTS idx_comments_node ON comments(node_id);
 CREATE INDEX IF NOT EXISTS idx_verifications_node ON verifications(node_id);
+
+-- Personal collections and event registrations are owned by the signed-in user.
+CREATE TABLE IF NOT EXISTS bookmarks (
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    node_id INT NOT NULL REFERENCES knowledge_nodes(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, node_id)
+);
+CREATE TABLE IF NOT EXISTS event_attendees (
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    node_id INT NOT NULL REFERENCES event_nodes(node_id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, node_id)
+);
+CREATE INDEX IF NOT EXISTS idx_nodes_author ON knowledge_nodes(user_id);
+CREATE INDEX IF NOT EXISTS idx_nodes_feed ON knowledge_nodes(category, created_at DESC, id DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users(LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_handle_lower ON users(LOWER(handle));

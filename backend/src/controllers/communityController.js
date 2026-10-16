@@ -40,8 +40,8 @@ export const getCommunityById = async (req, res, next) => {
         cm.image_url AS image
        FROM knowledge_nodes k
        JOIN community_nodes cm ON k.id = cm.node_id
-       WHERE k.id = $1 AND k.category = 'Communities'`,
-      [id]
+       WHERE k.id = $1 AND k.category = 'Communities' AND k.status != 'Removed'`,
+      [id],
     );
 
     if (clubRes.rows.length === 0) {

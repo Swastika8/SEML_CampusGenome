@@ -9,6 +9,23 @@
     "start:backend": "npm --prefix backend start",
     "db:init": "npm --prefix backend run db:init",
     "db:seed": "npm --prefix backend run db:seed",
-    "build:frontend": "npm --prefix frontend run build"
+    "build:frontend": "npm --prefix frontend run build",
+    "dev": "node scripts/dev.mjs",
+    "setup": "npm --prefix backend ci && npm --prefix frontend ci",
+    "test": "npm --prefix backend test",
+    "lint": "npm --prefix frontend run lint",
+    "build": "npm --prefix frontend run build",
+    "format": "prettier --write \"frontend/src/**/*.{js,jsx,css}\" \"backend/src/**/*.js\" \"backend/test/**/*.js\" \"scripts/*.mjs\" \"*.{json,md}\"",
+    "format:check": "prettier --check \"frontend/src/**/*.{js,jsx,css}\" \"backend/src/**/*.js\" \"backend/test/**/*.js\"",
+    "test:e2e": "playwright test",
+    "test:postgres": "node scripts/test-postgres.mjs",
+    "capture": "node scripts/capture.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "prettier": "^3.9.10"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

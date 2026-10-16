@@ -1,159 +1,168 @@
 import { useState } from 'react';
-import { X, ChevronDown, ChevronRight, Book, Wifi, VolumeX, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X, Wifi, VolumeX, ChevronDown, Feather, Pin, ArrowUpRight } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { useContribution } from '../../context/ContributionContext';
-import Button from '../common/Button';
-import EngagementBar from '../common/EngagementBar';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { api } from '../../lib/api';
 
 export default function InfoSidePanel({ buildingId, onClose }) {
-  const { buildings } = useData();
-  const { openWizard } = useContribution();
-  const [activeTab, setActiveTab] = useState('Campus');
-  const [expandedSection, setExpandedSection] = useState('wifi');
-
-  const building = buildings.find(b => b.id === buildingId);
-
-  if (!building) return null;
-
-  const tabs = ['Academic', 'Campus', 'Community', 'Lifestyle'];
-
+  const { buildings, refreshData } = useData();
+  const { user } = useAuth();
+  const notify = useToast();
+  const [activeTab, setActiveTab] = useState('lowdown');
+  const [expanded, setExpanded] = useState('wifi');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const building = buildings.find((b) => b.id === buildingId);
+  if (!building)
+    return (
+      <section className="place-panel">
+        <h2>Uncharted territory.</h2>
+        <p>Choose one of the marked campus places.</p>
+        <button onClick={onClose}>Back to the map</button>
+      </section>
+    );
+  const history = Array.isArray(building.details?.history) ? building.details.history : [];
+  async function pinNote(e) {
+    e.preventDefault();
+    if (!note.trim() || busy) return;
+    setBusy(true);
+    try {
+      await api('/buildings/' + building.id + '/history', {
+        method: 'POST',
+        body: { change: note.trim() },
+      });
+      setNote('');
+      await refreshData();
+      notify('Local lore, pinned for the next person.');
+    } catch (error) {
+      notify(error.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <div className="h-full bg-white/60 dark:bg-[#111827]/70 backdrop-blur-2xl border-l border-white/40 dark:border-white/20 shadow-2xl flex flex-col animate-fade-in-up w-full md:w-[400px]">
-      {/* Header */}
-      <div className="p-6 flex items-start justify-between border-b border-gray-200 dark:border-charcoal-700">
-        <div>
-          <h2 className="font-serif text-2xl font-bold text-charcoal-900 dark:text-gray-100 mb-1">{building.name}</h2>
-          <p className="text-sm text-charcoal-700 dark:text-gray-400">{building.description}</p>
-        </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-charcoal-800 rounded-full transition-colors">
-          <X className="text-charcoal-500 dark:text-gray-400" size={20} />
+    <section className="place-panel" aria-label={building.name + ' details'}>
+      <header className="place-panel-header">
+        <span className="place-eyebrow">CAMPUS INTEL / {building.id.toUpperCase()}</span>
+        <button aria-label="Close place details" onClick={onClose}>
+          <X size={18} />
+        </button>
+        <h2>{building.name}</h2>
+        <p>{building.description}</p>
+      </header>
+      <div className="place-tabs" role="tablist" aria-label="Place information">
+        <button
+          id="lowdown-tab"
+          role="tab"
+          aria-selected={activeTab === 'lowdown'}
+          aria-controls="place-info"
+          onClick={() => setActiveTab('lowdown')}
+        >
+          The lowdown
+        </button>
+        <button
+          id="notes-tab"
+          role="tab"
+          aria-selected={activeTab === 'notes'}
+          aria-controls="place-info"
+          onClick={() => setActiveTab('notes')}
+        >
+          Field notes <span>{history.length}</span>
         </button>
       </div>
-
-      {/* Tabs */}
-      <div className="px-6 pt-4 pb-2">
-        <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-lg w-full overflow-x-auto no-scrollbar">
-          {tabs.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 min-w-fit px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                activeTab === tab 
-                  ? 'bg-white dark:bg-midnight-800 shadow-sm text-charcoal-900 dark:text-gold-400' 
-                  : 'text-charcoal-600 dark:text-gray-400 hover:text-charcoal-900 dark:hover:text-gray-200'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content Area - Structured Lists, no cards */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-        {activeTab === 'Campus' && (
+      <div
+        id="place-info"
+        role="tabpanel"
+        aria-labelledby={activeTab === 'lowdown' ? 'lowdown-tab' : 'notes-tab'}
+        className="place-panel-body"
+      >
+        {activeTab === 'lowdown' ? (
           <>
-            {/* Section: Wi-Fi */}
-            <div className="border border-gray-200 dark:border-charcoal-700 rounded-lg overflow-hidden bg-white/50 dark:bg-charcoal-800/30">
-              <button 
-                onClick={() => setExpandedSection(expandedSection === 'wifi' ? null : 'wifi')}
-                className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-charcoal-800/50 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Wifi size={18} className="text-gold-500" />
-                  <span className="font-semibold text-charcoal-900 dark:text-gray-200">Wi-Fi Coverage</span>
-                </div>
-                {expandedSection === 'wifi' ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            {[
+              ['wifi', 'Wi-Fi worth finding', Wifi, building.details?.wifi],
+              ['quiet', 'A little peace & quiet', VolumeX, building.details?.quietSpots],
+            ].map(([id, title, Icon, text]) => (
+              <div className="place-accordion" key={id}>
+                <button
+                  aria-expanded={expanded === id}
+                  onClick={() => setExpanded(expanded === id ? null : id)}
+                >
+                  <Icon size={17} />
+                  <span>{title}</span>
+                  <ChevronDown size={16} className={expanded === id ? 'turned' : ''} />
+                </button>
+                {expanded === id && (
+                  <div>
+                    <p>{text || 'Still waiting for a student to share the intel.'}</p>
+                    <small>From the campus field guide</small>
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="place-lore-invite">
+              <span>✧</span>
+              <h3>
+                Know this place
+                <br />a little too well?
+              </h3>
+              <p>The tiny details are the good stuff. Leave one for the next person.</p>
+              <button onClick={() => setActiveTab('notes')}>
+                Add your local lore <ArrowUpRight size={14} />
               </button>
-              
-              {expandedSection === 'wifi' && (
-                <div className="p-4 border-t border-gray-200 dark:border-charcoal-700 text-sm text-charcoal-800 dark:text-gray-300 flex flex-col gap-2">
-                  <p>{building.details.wifi}</p>
-                  <EngagementBar 
-                    nodeId={`b_${building.id}_wifi`}
-                    itemTitle={`${building.name} - Wi-Fi Intel`}
-                    category="Campus Map"
-                    verifyCount={42} 
-                    commentCount={5} 
-                    repostCount={1} 
-                  />
-                </div>
-              )}
             </div>
-
-            {/* Section: Quiet Spots */}
-            <div className="border border-gray-200 dark:border-charcoal-700 rounded-lg overflow-hidden bg-white/50 dark:bg-charcoal-800/30">
-              <button 
-                onClick={() => setExpandedSection(expandedSection === 'quiet' ? null : 'quiet')}
-                className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-charcoal-800/50 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <VolumeX size={18} className="text-gold-500" />
-                  <span className="font-semibold text-charcoal-900 dark:text-gray-200">Quiet Study Spots</span>
+          </>
+        ) : (
+          <>
+            <p className="field-notes-intro">Little observations. Long-term campus memory.</p>
+            {user ? (
+              <form className="field-note-form" onSubmit={pinNote}>
+                <label htmlFor="field-note">
+                  <Feather size={14} />
+                  Leave a field note
+                </label>
+                <textarea
+                  id="field-note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  maxLength={2000}
+                  required
+                  placeholder="A shortcut, an update, a tiny discovery..."
+                />
+                <div>
+                  <span>{note.length}/2000</span>
+                  <button disabled={busy || !note.trim()} type="submit">
+                    <Pin size={13} />
+                    {busy ? 'Pinning...' : 'Pin a field note'}
+                  </button>
                 </div>
-                {expandedSection === 'quiet' ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              </button>
-              
-              {expandedSection === 'quiet' && (
-                <div className="p-4 border-t border-gray-200 dark:border-charcoal-700 text-sm text-charcoal-800 dark:text-gray-300 flex flex-col gap-2">
-                  <p>{building.details.quietSpots}</p>
-                  <EngagementBar 
-                    nodeId={`b_${building.id}_quiet`}
-                    itemTitle={`${building.name} - Quiet Study Spots`}
-                    category="Campus Map"
-                    verifyCount={18} 
-                    commentCount={2} 
-                    repostCount={0} 
-                  />
-                </div>
+              </form>
+            ) : (
+              <Link className="field-note-signin" to="/login">
+                Sign in to leave some local lore <ArrowUpRight size={14} />
+              </Link>
+            )}
+            <div className="field-notes-list">
+              {history.length ? (
+                [...history].reverse().map((entry, index) => (
+                  <article key={index}>
+                    <span className="field-note-dot" />
+                    <div>
+                      <p>{entry.change}</p>
+                      <small>
+                        {entry.author || 'Campus contributor'} · {entry.date || 'Earlier on campus'}
+                      </small>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="field-notes-empty">This corner has room for its first story.</div>
               )}
             </div>
           </>
         )}
-
-        {activeTab === 'Lifestyle' && (
-          <div className="flex flex-col gap-4">
-            <h3 className="font-medium text-charcoal-900 dark:text-gray-200 flex items-center gap-2">
-              <MapPin size={18} className="text-gold-500" /> Nearby Amenities
-            </h3>
-            {/* Stylized contextual map block */}
-            <div 
-              className="w-full h-32 rounded-xl flex flex-col items-center justify-center border border-dashed border-gray-400 dark:border-charcoal-600 bg-white/30 dark:bg-black/20"
-              style={{
-                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(156, 163, 175, 0.2) 1px, transparent 0)',
-                backgroundSize: '16px 16px'
-              }}
-            >
-               <MapPin size={24} className="text-gray-400 dark:text-gray-500 mb-2" />
-               <span className="text-xs font-medium text-gray-500 dark:text-gray-400 tracking-wide uppercase">Interactive Floorplan Disabled</span>
-            </div>
-            <ul className="text-sm text-charcoal-700 dark:text-gray-300 space-y-4 mt-2">
-              <li className="flex flex-col border-b border-gray-100 dark:border-charcoal-800 pb-2">
-                <span className="font-medium">Campus Cafe</span>
-                <EngagementBar 
-                  nodeId="b_amenity_cafe"
-                  itemTitle="Campus Cafe & Bistro"
-                  category="Amenities"
-                  verifyCount={89} 
-                  commentCount={14} 
-                  repostCount={3} 
-                />
-              </li>
-              <li className="flex flex-col border-b border-gray-100 dark:border-charcoal-800 pb-2">
-                <span className="font-medium">Vending Machines (2nd Floor)</span>
-                <EngagementBar 
-                  nodeId="b_amenity_vending"
-                  itemTitle="Vending Machines (2nd Floor)"
-                  category="Amenities"
-                  verifyCount={12} 
-                  commentCount={0} 
-                  repostCount={1} 
-                />
-              </li>
-            </ul>
-          </div>
-        )}
       </div>
-    </div>
+    </section>
   );
 }

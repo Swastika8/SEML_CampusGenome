@@ -3,12 +3,12 @@
 
 -- 1. Insert Users
 INSERT INTO users (id, handle, name, email, password_hash, graduation_year, department, reputation_score, rank, role)
-VALUES 
-(1, '@StudentJohn', 'John Doe', 'john.doe@campus.edu', '$2b$10$fthrhnYe0zH53fBEQnp4Fe346WJR/Ce7rKdsc/RtrE8uT1JezZ1eq', 2026, 'Computer Science', 142, 'Helix', 'student'),
-(2, '@CampusExplorer', 'Jane Smith', 'jane.smith@campus.edu', '$2b$10$fthrhnYe0zH53fBEQnp4Fe346WJR/Ce7rKdsc/RtrE8uT1JezZ1eq', 2025, 'Information Technology', 287, 'Nucleus', 'student'),
-(3, '@TechGuru', 'Alex Rivera', 'alex.tech@campus.edu', '$2b$10$fthrhnYe0zH53fBEQnp4Fe346WJR/Ce7rKdsc/RtrE8uT1JezZ1eq', 2027, 'EnTC', 85, 'Chromosome', 'student'),
-(4, '@SwastikaSinha', 'Swastika Sinha', 'swastika.sinha@campus.edu', '$2b$10$fthrhnYe0zH53fBEQnp4Fe346WJR/Ce7rKdsc/RtrE8uT1JezZ1eq', 2028, 'Information Technology', 320, 'Nucleus', 'moderator')
-ON CONFLICT (id) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+VALUES
+(1, '@StudentJohn', 'John Doe', 'john.doe@campus.edu', '$2b$12$TvsRj02NoZn4q2R/88M8/Or7aOODGEaGTlM2p6Zq9lyasdd6vbwZ2', 2026, 'Computer Science', 142, 'Helix', 'student'),
+(2, '@CampusExplorer', 'Jane Smith', 'jane.smith@campus.edu', '$2b$12$TvsRj02NoZn4q2R/88M8/Or7aOODGEaGTlM2p6Zq9lyasdd6vbwZ2', 2025, 'Information Technology', 287, 'Nucleus', 'student'),
+(3, '@TechGuru', 'Alex Rivera', 'alex.tech@campus.edu', '$2b$12$TvsRj02NoZn4q2R/88M8/Or7aOODGEaGTlM2p6Zq9lyasdd6vbwZ2', 2027, 'EnTC', 85, 'Chromosome', 'student'),
+(4, '@SwastikaSinha', 'Swastika Sinha', 'swastika.sinha@campus.edu', '$2b$12$TvsRj02NoZn4q2R/88M8/Or7aOODGEaGTlM2p6Zq9lyasdd6vbwZ2', 2028, 'Information Technology', 320, 'Nucleus', 'moderator')
+ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('users_id_seq', (SELECT COALESCE(MAX(id), 1) FROM users));
 
@@ -104,18 +104,13 @@ ON CONFLICT (node_id) DO NOTHING;
 -- 7. Insert Buildings
 INSERT INTO buildings (id, name, description, category, wifi, quiet_spots, history)
 VALUES
-('b1', 'Main Administration', 'The central hub of the university housing the Registrar, Dean of Student Affairs, and finance counters.', 'Campus', 'Strong coverage in lobby', '3rd floor waiting area', 
+('b1', 'Main Administration', 'The central hub of the university housing the Registrar, Dean of Student Affairs, and finance counters.', 'Campus', 'Strong coverage in lobby', '3rd floor waiting area',
  '[{"date": "2023-10-01", "change": "Added new waiting area seating", "author": "@Admin"}]'::jsonb),
-('b2', 'Central Library', 'Four floors of books, air-conditioned study spaces, archival collections, and digital media rooms.', 'Academic', 'Excellent on floors 1-3, weak in basement', 'Basement silent reading room', 
+('b2', 'Central Library', 'Four floors of books, air-conditioned study spaces, archival collections, and digital media rooms.', 'Academic', 'Excellent on floors 1-3, weak in basement', 'Basement silent reading room',
  '[{"date": "2024-01-15", "change": "Updated wifi coverage details", "author": "@StudentJohn"}, {"date": "2024-02-20", "change": "Added basement silent zone", "author": "@CampusExplorer"}]'::jsonb),
-('b3', 'Computer Science Lab', 'High performance computing cluster, AI workstations, and senior capstone project rooms.', 'Academic', 'Excellent (Dedicated high-speed network)', 'Project room 102 (booking required)', 
+('b3', 'Computer Science Lab', 'High performance computing cluster, AI workstations, and senior capstone project rooms.', 'Academic', 'Excellent (Dedicated high-speed network)', 'Project room 102 (booking required)',
  '[{"date": "2023-11-05", "change": "Added booking requirement for project room", "author": "@TechGuru"}]'::jsonb)
-ON CONFLICT (id) DO UPDATE SET 
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    wifi = EXCLUDED.wifi,
-    quiet_spots = EXCLUDED.quiet_spots,
-    history = EXCLUDED.history;
+ON CONFLICT (id) DO NOTHING;
 
 -- 8. Insert Courses
 INSERT INTO courses (id, code, name, description, category, professor, difficulty, practical_focus, history, reviews)
@@ -123,10 +118,7 @@ VALUES
 ('c1', 'CS101', 'Introduction to Computer Science', 'Fundamental concepts of programming, computational thinking, and algorithms using modern languages.', 'Academic', 'Dr. Alan Turing', 'Medium', 'High',
  '[{"date": "2023-09-01", "change": "Updated practical projects list", "author": "@TechGuru"}]'::jsonb,
  '[{"author": "@StudentJohn", "content": "Great introductory course, highly recommend paying attention to the lab sessions.", "verified": true}]'::jsonb)
-ON CONFLICT (id) DO UPDATE SET
-    name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    reviews = EXCLUDED.reviews;
+ON CONFLICT (id) DO NOTHING;
 
 -- 9. Insert Comments
 INSERT INTO comments (id, node_id, user_id, author_name, text)
@@ -152,3 +144,7 @@ ON CONFLICT (node_id, user_id) DO NOTHING;
 SELECT setval('knowledge_nodes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_nodes));
 SELECT setval('comments_id_seq', (SELECT COALESCE(MAX(id), 1) FROM comments));
 SELECT setval('verifications_id_seq', (SELECT COALESCE(MAX(id), 1) FROM verifications));
+
+-- Derive displayed counters from actual sample rows.
+UPDATE knowledge_nodes k SET verification_count=(SELECT COUNT(*) FROM verifications v WHERE v.node_id=k.id), comment_count=(SELECT COUNT(*) FROM comments c WHERE c.node_id=k.id);
+UPDATE users SET rank=CASE WHEN reputation_score>=250 THEN 'Nucleus' WHEN reputation_score>=100 THEN 'Chromosome' ELSE 'Helix' END;

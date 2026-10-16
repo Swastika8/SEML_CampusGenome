@@ -63,3 +63,10 @@ Thumbs.db
 .agents/
 .system_generated/
 scratch/
+
+# Local demo database and generated QA files
+backend/.data/
+tmp/
+
+# Optional local report copy; the canonical handover is in output/pdf/.
+/CampusGenome-Upgrade-Report.pdf

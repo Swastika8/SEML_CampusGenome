@@ -1,160 +1,133 @@
-# Campus Genome 🧬
+# CampusGenome
 
-Campus Genome is an enterprise-grade, student-powered digital knowledge graph and campus intelligence platform. It replaces outdated, fragmented college information with real-time, verified student contributions, interactive schematic campus navigation, academic course guides, career insights, and curated campus lifestyle secrets.
+The student-powered campus collective: academic guides, opportunities, events, communities, campus places, and the useful knowledge students pass on.
 
-Built with a modern full-stack decoupled architecture:
-- **Frontend**: React 19, Vite, Tailwind CSS, Lucide Icons, Glassmorphism design system
-- **Backend**: Node.js, Express REST API, PostgreSQL, JWT Authentication, Bcrypt
-- **Architecture & Modeling**: StarUML `.mdj` state charts, class diagrams, and entity specifications
+CampusGenome now feels like an unofficial student common room: readable posts, topic channels, helpful votes, student handles and a pinned community board. Gold accents, serif headlines, sticky notes, doodles and the midnight theme retain its creative personality. Real API interactions and a self-contained local demo support the experience. The implementation report is at [output/pdf/CampusGenome-Upgrade-Report.pdf](output/pdf/CampusGenome-Upgrade-Report.pdf).
 
----
+## Start the local demo
 
-## 🌟 Key Features
+Requires Node.js 22.12 or newer. Node 24 was used for verification.
 
-1. **Authentication & Role-Based Access Control (RBAC)**
-   - Secure login & student onboarding with handles (`@handle`), email, department, and graduation year.
-   - BCrypt hashed passwords and JWT token authorization.
-   - Dynamic reputation ranking system (`Helix`, `Chromosome`, `Nucleus`, `Moderator`).
-
-2. **Interactive Schematic Campus Map**
-   - Clickable campus zones with building intelligence, departments, lab timings, and facilities.
-
-3. **Academic & Career Repositories**
-   - 12 verified campus departments with curated subject guides, syllabus notes, and study material.
-   - Interview archives, placement insights, and compensation benchmarks.
-
-4. **Curated Campus Lifestyle & Verified Secrets**
-   - Student secrets, late-night spots, campus hacks, and hidden study nooks.
-
-5. **Live Unified Search & Moderated Contribution Engine**
-   - Real-time global search across buildings, courses, secrets, and events.
-   - Interactive contribution modals with image upload support and automated review status.
-
----
-
-## 📁 Repository Structure
-
-```text
-SEML_CampusGenome/
-├── backend/                  # Node.js & Express REST API
-│   ├── src/
-│   │   ├── config/           # Database pool & environment configs
-│   │   ├── controllers/      # Route logic (auth, academics, buildings, etc.)
-│   │   ├── db/               # PostgreSQL schema migrations, init & seed scripts
-│   │   ├── middleware/       # JWT auth & centralized error handling
-│   │   ├── routes/           # REST endpoints
-│   │   └── server.js         # API entrypoint
-│   ├── .env.example          # Sample environment variables
-│   └── package.json
-│
-├── frontend/                 # React + Vite Single Page Application
-│   ├── public/               # Static assets & college photography
-│   ├── src/
-│   │   ├── components/       # Layout, Modals, Wizards, Header & Sidebar
-│   │   ├── context/          # Auth, Theme, Data & Contribution contexts
-│   │   ├── data/             # Departments taxonomy & fallback data
-│   │   ├── pages/            # Login, Dashboard, Academics, Career, Map, Lifestyle
-│   │   ├── App.jsx           # Protected routing & layout hierarchy
-│   │   └── main.jsx          # React DOM entry
-│   └── package.json
-│
-├── postman/                  # Postman test suites
-│   ├── CampusGenome.postman_collection.json
-│   └── CampusGenome.postman_environment.json
-│
-├── CampusGenome.mdj          # Software Engineering UML & Class Models
-├── CampusGenome2.mdj         # Component & Sequence Architecture
-├── State_Chart.mdj           # State Transition Models
-├── package.json              # Root npm scripts orchestration
-└── README.md
+```sh
+npm install
+npm run setup
+npm run dev
 ```
 
----
+Open **http://127.0.0.1:5173**. The API runs at **http://127.0.0.1:5000/api**. The launcher waits for API readiness before starting the frontend. Dependencies are already installed in this workspace.
 
-## 🚀 Quick Start Guide
+The root `dev` command explicitly selects the local demo. No PostgreSQL service or `.env` file is needed for that mode. PGlite executes real PostgreSQL SQL and persists changes under `backend/.data/campus`; this directory is ignored by Git. First startup creates the schema and sample content. Sample event dates are set relative to that first startup, then remain unchanged.
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [PostgreSQL](https://www.postgresql.org/) (v14 or higher)
+You can browse without an account. To try writes, open **Sign in** and select **Try the student demo**, or register a new account. Seeded accounts include `@StudentJohn`, `@TechGuru`, `@CampusExplorer`, and moderator `@SwastikaSinha`; their sample password is `password123`. Demo mode is rejected in production and the demo API binds to the loopback interface by default.
 
-### 1. Backend Setup
+## What changed
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   npm install
-   ```
+- A common-room homepage with post voting rails, author handles, flairs, replies, pocket saves, share links, a composer and contributor karma.
+- Server-filtered channels: Exam survival, After class, Future you, What's happening and Find your people. Buzzing, Fresh and Most helpful sorts use the actual API with pagination.
+- A compact search header, readable paper surfaces, playful pinboard notes and a calmer campus backdrop, with a collapsible icon rail and guided tour.
+- A clean illustrated field guide with numbered places, URL-backed selection, a directory and one readable details panel that stacks on mobile.
+- Authenticated building field notes with server-selected authors, persistence and real history, plus useful Wi-Fi and quiet-spot accordions.
+- The original academic drilldown, editorial career page, news mosaic and organic lifestyle layouts.
+- A daily DNA capsule: crack it open to reveal a real campus find, shuffle to another strand, follow it, or tuck it in your pocket with a little confetti.
+- Optional campus side quests whose progress reflects actual saved finds, event RSVPs and contributions. No invented points or streaks.
+- A playful campus mood forecast and a shuffleable event feed.
+- A paginated discovery view alongside the original category pages, with filters, sorting, URL-backed searches, empty states and retries.
+- Keyboard command search with Ctrl/Cmd+K and actual API results.
+- Private saved collections, persistent event RSVPs, contribution detail pages, real discussions, and peer verification.
+- Category-aware contribution forms with validation, pending states, field errors, publication feedback, and reputation updates.
+- The account page shows real contribution, pocket and RSVP totals.
+- Responsive layouts, saved dark/light mode, focus-managed dialogs, labeled mobile navigation, a skip link, reduced-motion support, and a render error boundary.
+- Authenticated and validated writes, safer transactions, row-locked verification, protected removal, case-insensitive account uniqueness, bounded pagination, request IDs, controlled error responses, health checks, security headers, origin restrictions, and rate limits.
+- A working local demo, standard PostgreSQL support, isolated integration/browser tests, consistent formatting, updated dependencies, and a PDF handover.
 
-2. Create your `.env` configuration file from the template:
-   ```bash
-   cp .env.example .env
-   ```
-   Configure your PostgreSQL connection variables:
-   ```env
-   PORT=5000
-   NODE_ENV=development
-   PGHOST=localhost
-   PGPORT=5432
-   PGUSER=postgres
-   PGPASSWORD=your_postgres_password
-   PGDATABASE=CampusGenome
-   JWT_SECRET=your_secret_key_here
-   JWT_EXPIRES_IN=7d
-   ```
+The original page compositions are connected to API data. Existing UML models and category routes remain available. The `/events/:id` detail URL remains an alias for the contribution detail view.
 
-3. Initialize and seed the PostgreSQL database:
-   ```bash
+## Technology choices
+
+| Layer               | Stack                                                         | Reason                                                                                                     |
+| ------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Frontend            | React 19, React Router 7                                      | Keeps the established component architecture and supports consistent client navigation                     |
+| Design              | Tailwind CSS 4, Lucide icons, React Joyride, matching CSS     | Preserves the original glass, gold, serif and midnight identity, including its guided tour                 |
+| Build               | Vite 8                                                        | Fast iteration, optimized output, and a same-origin API proxy                                              |
+| Backend             | Node.js, Express 4                                            | Maintains the existing JavaScript API and route structure                                                  |
+| Database            | PostgreSQL via pg; PGlite for the local demo                  | Relational integrity and real transactions, with a database-service-free demo                              |
+| Validation/security | Zod, bcryptjs, jsonwebtoken, Helmet, cors, express-rate-limit | Explicit validation, authenticated identity, password hashing, signed sessions, headers and request limits |
+| Verification        | Node test runner, Playwright, Oxlint, Prettier                | Repeatable HTTP/SQL checks, browser workflows, linting and readable source                                 |
+| Report              | Python, ReportLab, Poppler                                    | A reproducible, visually verified PDF                                                                      |
+
+Tailwind uses its updated Vite integration with the original theme configuration. Scoped common-room CSS handles forum hierarchy and responsive field-guide columns while retaining gold, serif and midnight elements. Existing APIs support votes and field notes, so these additions require no new dependency or external service. The API helper also propagates cancelled response parsing correctly to prevent a feed render failure. Lockfiles preserve the tested versions.
+
+## Use standard PostgreSQL
+
+1. Configure `backend/.env` from `backend/.env.example`. Supply PostgreSQL credentials (or `DATABASE_URL`), `DB_MODE=postgres`, and a unique JWT secret.
+2. Initialize the database and additive schema:
+
+   ```sh
    npm run db:init
-   npm run db:seed
    ```
 
-4. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
-   *The API will be live at `http://localhost:5000`.*
+3. Start the API in one terminal and the frontend in another:
 
----
-
-### 2. Frontend Setup
-
-1. In a new terminal, navigate to the frontend directory:
-   ```bash
-   cd frontend
-   npm install
+   ```sh
+   npm run start:backend
    ```
 
-2. Start the Vite development server:
-   ```bash
-   npm run dev
+   ```sh
+   npm run dev:frontend
    ```
-   *The application will open at `http://localhost:5173`.*
 
----
+The init command does **not** insert sample data. Run `npm run db:seed` only if you intentionally want the example dataset. Existing seeded records are not overwritten by the seed inserts; displayed sample counters are reconciled with their actual rows. API startup also applies the additive schema, including the bookmarks and event attendance tables.
 
-## 🔑 Demo Credentials
+For production, set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 characters, `CORS_ORIGINS`, and a durable PostgreSQL connection. The Vite development proxy is for local development; use an appropriate same-origin reverse proxy or `VITE_API_URL` for a separate frontend deployment. Secrets belong in backend configuration, never in `VITE_` variables. No external deployment was performed.
 
-The database seeder provisions verified campus accounts for testing:
+## Verification commands
 
-| Handle | Role | Rank Tier | Password |
-| :--- | :--- | :--- | :--- |
-| `@SwastikaSinha` | Moderator | Nucleus | `password123` |
-| `@StudentJohn` | Student | Chromosome | `password123` |
-| `@TechGuru` | Contributor | Chromosome | `password123` |
-| `@CampusExplorer` | Contributor | Nucleus | `password123` |
+| Command                       | What it checks                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `npm test`                    | 14 API integration checks against an isolated in-memory PGlite database                                            |
+| `npm run test:postgres`       | The same 14 checks in a temporary schema on your configured PostgreSQL server; the schema is removed after the run |
+| `npm run test:e2e`            | Fourteen browser scenarios using separate in-memory API and frontend servers                                       |
+| `npm run lint`                | Frontend lint rules, including React hooks                                                                         |
+| `npm run build`               | Frontend production build                                                                                          |
+| `npm run format:check`        | Source formatting                                                                                                  |
+| `npm run format`              | Format the application source                                                                                      |
+| `npm --prefix frontend audit` | Frontend dependency advisories                                                                                     |
+| `npm --prefix backend audit`  | Backend dependency advisories                                                                                      |
 
----
+Browser tests use Microsoft Edge on Windows. On other platforms, install the Playwright browser with `npx playwright install chromium`. The browser suite covers restored public routes, academic drilldown, demo login/logout, registration, remembered login, publishing, discussion persistence, removal permissions, pocket saves, RSVPs, verification, keyboard search, theme persistence, the icon rail, capsule discovery and real quest progress. Overflow checks cover 320, 390, 768, 1024 and 1440 pixel widths.
 
-## 🧪 API Testing with Postman
+At delivery: **14 embedded API checks, 14 native PostgreSQL checks, and 14 browser scenarios passed**. Lint and build passed, and both application dependency audits reported zero known advisories. Native PostgreSQL tests create a unique `cg_test_...` schema and never write to existing campus tables.
 
-Import the provided files in the `postman/` directory:
-1. Open Postman -> Click **Import**.
-2. Select `postman/CampusGenome.postman_collection.json`.
-3. Select `postman/CampusGenome.postman_environment.json`.
-4. Switch your active environment to **CampusGenome Local Dev**.
-5. Execute `POST /api/auth/login` to automatically populate the environment's `jwt_token`.
+## API and project layout
 
----
+See [docs/API.md](docs/API.md) for requests, response behavior, validation limits and security configuration.
 
-## 📜 License
-Academic project built for Software Engineering & Modeling Laboratory (SEML).
+```text
+backend/src/app.js            Testable Express application
+backend/src/server.js         Bootstrap, listener and graceful shutdown
+backend/src/config/           Database adapters and signing configuration
+backend/src/controllers/      Domain behavior and transactional writes
+backend/src/middleware/       Authentication, validation and controlled errors
+backend/src/db/               Additive schema, explicit seed and demo bootstrap
+backend/test/                 HTTP/SQL integration suite
+frontend/src/components/     Application shell and shared UI
+frontend/src/context/        Account, data, theme, toast and contribution state
+frontend/src/pages/          Overview, discovery, details, map, profile, sign-in
+frontend/src/lib/            Shared API client and content helpers
+frontend/src/*.css           Design system, detail layouts and responsive rules
+tests/browser/              Playwright workflow and layout checks
+scripts/                    Startup, native tests, screenshots and PDF generation
+output/pdf/                 Completed handover report
+postman/                    Existing API collection
+*.mdj                       Preserved UML models
+```
+
+## Report and screenshot regeneration
+
+With the local app running, `npm run capture` saves screenshots to `tmp/qa`. The checked-in report is already generated. To rebuild it, use Python with ReportLab installed and run `python scripts/create_report.py`; the script reads the dashboard screenshot. Poppler can render the result for visual review. The report uses Windows fonts on this Windows workspace.
+
+## Current boundaries
+
+The map is schematic and the mood forecast is decorative. Image attachments use HTTP/HTTPS image URLs; an upload bucket and Google SSO are not configured. Demo content is explicitly labeled. The daily capsule draws from up to 100 fetched contributions; the common-room and discovery feeds are paginated. Remote images require network access, with a local campus-photo fallback. Rate limits currently use an in-process store; a multi-instance deployment needs shared rate-limit storage. Session storage is the default; persistent sign-in uses local storage.
+
+Academic project for the Software Engineering & Modeling Laboratory.

@@ -32,15 +32,19 @@ export const getUserProfile = async (req, res, next) => {
 
     const isNumeric = /^\d+$/.test(handleOrId);
     const whereClause = isNumeric ? 'u.id = $1' : 'LOWER(u.handle) = LOWER($1)';
-    const param = isNumeric ? parseInt(handleOrId, 10) : (handleOrId.startsWith('@') ? handleOrId : `@${handleOrId}`);
+    const param = isNumeric
+      ? parseInt(handleOrId, 10)
+      : handleOrId.startsWith('@')
+        ? handleOrId
+        : `@${handleOrId}`;
 
     const userRes = await pool.query(
       `SELECT 
-        u.id, u.handle, u.name, u.email, u.department, u.graduation_year,
+        u.id, u.handle, u.name, u.department, u.graduation_year,
         u.reputation_score, u.rank, u.role, u.avatar_url, u.created_at
        FROM users u 
        WHERE ${whereClause}`,
-      [param]
+      [param],
     );
 
     if (userRes.rows.length === 0) {
@@ -53,9 +57,9 @@ export const getUserProfile = async (req, res, next) => {
     const contributionsRes = await pool.query(
       `SELECT id, category, title, description, status, verification_count, comment_count, created_at
        FROM knowledge_nodes
-       WHERE user_id = $1
+       WHERE user_id = $1 AND status != 'Removed'
        ORDER BY created_at DESC;`,
-      [user.id]
+      [user.id],
     );
 
     res.status(200).json({

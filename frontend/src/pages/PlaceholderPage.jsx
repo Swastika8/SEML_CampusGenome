@@ -13,7 +13,8 @@ export default function PlaceholderPage({ title }) {
             {title}
           </h1>
           <p className="text-charcoal-600 dark:text-gray-400 font-sans text-lg">
-            This module is currently indexing the campus environment. Check back soon for deeper insights and connections.
+            This module is currently indexing the campus environment. Check back soon for deeper
+            insights and connections.
           </p>
         </div>
       </div>

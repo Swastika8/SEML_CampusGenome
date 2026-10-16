@@ -1,43 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MessageSquare, Send, Heart, Sparkles, User, Clock, ShieldCheck } from 'lucide-react';
+import { useData } from '../../context/DataContext';
+import { useToast } from '../../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 
-const API_BASE = 'http://localhost:5000/api';
-
-// Fallback seed discussions tailored for items without backend comments yet
-const getStarterComments = (title, category) => {
-  return [
-    {
-      id: 'seed-1',
-      author_name: 'Alex Rivera',
-      author_handle: '@TechGuru',
-      author_rank: 'Chromosome',
-      text: `Verified this recently. Really accurate and helpful for students navigating ${category || 'campus'}!`,
-      created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
-      likes: 3,
-    },
-    {
-      id: 'seed-2',
-      author_name: 'Swastika Sinha',
-      author_handle: '@SwastikaSinha',
-      author_rank: 'Nucleus',
-      text: 'Great contribution to the Genome graph. If anyone has extra updates or photos, please contribute via the wizard.',
-      created_at: new Date(Date.now() - 3600000 * 18).toISOString(),
-      likes: 7,
-    }
-  ];
-};
-
-export default function CommentsModal({ 
-  isOpen, 
-  onClose, 
-  nodeId, 
-  title = 'Campus Discussion', 
+export default function CommentsModal({
+  isOpen,
+  onClose,
+  nodeId,
+  title = 'Campus Discussion',
   category = 'Campus',
-  onCommentAdded 
+  onCommentAdded,
 }) {
-  const { user, token } = useAuth();
+  const { user, token, refreshUser } = useAuth();
+  const { refreshData } = useData();
+  const notify = useToast();
+  const navigate = useNavigate();
+  const modalRef = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newText, setNewText] = useState('');
@@ -46,168 +30,94 @@ export default function CommentsModal({
   const [notification, setNotification] = useState('');
   const commentsEndRef = useRef(null);
 
-  // Storage key for caching offline comments
-  const storageKey = `cg_comments_${nodeId || title}`;
-
-  // Load comments
   useEffect(() => {
     if (!isOpen) return;
-
-    let isMounted = true;
+    const controller = new AbortController();
+    const previous = document.activeElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    modalRef.current?.querySelector('button')?.focus();
     setLoading(true);
-
-    const fetchComments = async () => {
-      // 1. Check local storage cache first
-      let cached = [];
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (raw) cached = JSON.parse(raw);
-      } catch (e) {
-        console.warn('Failed to parse local comments:', e);
-      }
-
-      // 2. If nodeId is numeric, fetch from backend API
-      const isNumericNodeId = nodeId && !isNaN(Number(nodeId));
-      if (isNumericNodeId) {
-        try {
-          const res = await fetch(`${API_BASE}/nodes/${nodeId}/comments`);
-          if (res.ok) {
-            const json = await res.json();
-            if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-              if (isMounted) {
-                // Merge API comments with any local additions not yet in API
-                const apiCommentIds = new Set(json.data.map(c => String(c.id)));
-                const unsyncedLocal = cached.filter(c => !apiCommentIds.has(String(c.id)) && String(c.id).startsWith('local-'));
-                setComments([...json.data, ...unsyncedLocal]);
-                setLoading(false);
-                return;
-              }
-            }
-          }
-        } catch (err) {
-          console.warn('Comments API offline, falling back to local/seed:', err);
+    setNotification('');
+    setComments([]);
+    if (nodeId && /^\d+$/.test(String(nodeId))) {
+      api('/nodes/' + nodeId + '/comments', { signal: controller.signal })
+        .then((json) => setComments(json.data))
+        .catch((error) => {
+          if (error.name !== 'AbortError') notify(error.message, 'error');
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
+        });
+    } else setLoading(false);
+    const key = (e) => {
+      if (e.key === 'Escape') closeRef.current();
+      if (e.key === 'Tab') {
+        const items = modalRef.current?.querySelectorAll(
+          'button:not([disabled]),textarea:not([disabled])',
+        );
+        if (!items?.length) return;
+        const first = items[0],
+          last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
         }
       }
-
-      // 3. Fallback to cached or realistic starter comments
-      if (isMounted) {
-        if (cached && cached.length > 0) {
-          setComments(cached);
-        } else {
-          const seeds = getStarterComments(title, category);
-          setComments(seeds);
-          try {
-            localStorage.setItem(storageKey, JSON.stringify(seeds));
-          } catch {}
-        }
-        setLoading(false);
-      }
     };
-
-    fetchComments();
-
-    // Close on Escape
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
+    document.addEventListener('keydown', key);
     return () => {
-      isMounted = false;
-      window.removeEventListener('keydown', handleKeyDown);
+      controller.abort();
+      document.body.style.overflow = overflow;
+      document.removeEventListener('keydown', key);
+      previous?.focus();
     };
-  }, [isOpen, nodeId, title, category, storageKey, onClose]);
-
-  // Submit comment
+  }, [isOpen, nodeId, notify]);
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!user) {
+      closeRef.current();
+      navigate('/login');
+      return;
+    }
     if (!newText.trim() || submitting) return;
-
     setSubmitting(true);
-    const commentText = newText.trim();
-    const isNumericNodeId = nodeId && !isNaN(Number(nodeId));
-
-    const authorName = user?.name || 'Campus Contributor';
-    const authorHandle = user?.handle || '@Student';
-    const authorRank = user?.rank || 'Helix';
-
-    let createdComment = {
-      id: `local-${Date.now()}`,
-      node_id: nodeId,
-      author_name: authorName,
-      author_handle: authorHandle,
-      author_rank: authorRank,
-      text: commentText,
-      created_at: new Date().toISOString(),
-      likes: 0
-    };
-
-    // If backend available and node is real, post to API
-    if (isNumericNodeId) {
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const res = await fetch(`${API_BASE}/nodes/${nodeId}/comments`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            text: commentText,
-            authorName: authorName
-          })
-        });
-
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data) {
-            createdComment = {
-              ...createdComment,
-              id: json.data.id,
-              author_name: json.data.author_name || authorName,
-              author_handle: authorHandle,
-              author_rank: authorRank
-            };
-          }
-        }
-      } catch (err) {
-        console.warn('Backend comment creation failed, saved locally:', err);
-      }
-    }
-
-    // Update UI state
-    const updated = [...comments, createdComment];
-    setComments(updated);
     try {
-      localStorage.setItem(storageKey, JSON.stringify(updated));
-    } catch {}
-
-    setNewText('');
-    setSubmitting(false);
-    setNotification('Comment posted! +2 points added to your reputation 🧬');
-    setTimeout(() => setNotification(''), 4000);
-
-    if (onCommentAdded) {
-      onCommentAdded(createdComment);
+      const json = await api('/nodes/' + nodeId + '/comments', {
+        method: 'POST',
+        token,
+        body: { text: newText.trim() },
+      });
+      setComments((current) => [...current, json.data]);
+      setNewText('');
+      setNotification('Your strand is in the conversation. +2 reputation points.');
+      onCommentAdded?.(json.data);
+      await Promise.all([refreshData(), refreshUser()]);
+      commentsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+      notify(error.message, 'error');
+    } finally {
+      setSubmitting(false);
     }
-
-    // Scroll to bottom
-    setTimeout(() => {
-      commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
   };
 
   const toggleCommentLike = (commentId) => {
-    setLikedCommentIds(prev => {
+    setLikedCommentIds((prev) => {
       const isLiked = !!prev[commentId];
       const nextState = { ...prev, [commentId]: !isLiked };
-      
-      setComments(current => current.map(c => {
-        if (c.id === commentId) {
-          const currentLikes = c.likes || 0;
-          return { ...c, likes: isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1 };
-        }
-        return c;
-      }));
+
+      setComments((current) =>
+        current.map((c) => {
+          if (c.id === commentId) {
+            const currentLikes = c.likes || 0;
+            return { ...c, likes: isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1 };
+          }
+          return c;
+        }),
+      );
 
       return nextState;
     });
@@ -241,11 +151,15 @@ export default function CommentsModal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div 
+    <div
       className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
-      <div 
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title + ' discussion'}
+        ref={modalRef}
         className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-[#0B1120] text-gray-100 rounded-2xl border border-gold-500/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -264,13 +178,11 @@ export default function CommentsModal({
                   {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
                 </span>
               </div>
-              <h3 className="text-base font-semibold text-gray-100 truncate mt-0.5">
-                {title}
-              </h3>
+              <h3 className="text-base font-semibold text-gray-100 truncate mt-0.5">{title}</h3>
             </div>
           </div>
 
-          <button 
+          <button
             onClick={onClose}
             className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors shrink-0 ml-2"
             title="Close (Esc)"
@@ -298,7 +210,9 @@ export default function CommentsModal({
             <div className="flex flex-col items-center justify-center h-48 text-center text-gray-400 gap-2">
               <MessageSquare size={32} className="text-gray-600 mb-1" />
               <p className="text-sm font-medium text-gray-300">No discussions yet</p>
-              <p className="text-xs text-gray-500 max-w-sm">Be the first student or peer to share an insight, tip, or question!</p>
+              <p className="text-xs text-gray-500 max-w-sm">
+                Be the first student or peer to share an insight, tip, or question!
+              </p>
             </div>
           ) : (
             comments.map((comment) => {
@@ -308,7 +222,7 @@ export default function CommentsModal({
               const authorRank = comment.author_rank || 'Helix';
 
               return (
-                <div 
+                <div
                   key={comment.id}
                   className="p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-gold-500/20 transition-all flex flex-col gap-2.5"
                 >
@@ -318,9 +232,13 @@ export default function CommentsModal({
                         {authorName.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                        <span className="text-sm font-semibold text-gray-200 truncate">{authorName}</span>
+                        <span className="text-sm font-semibold text-gray-200 truncate">
+                          {authorName}
+                        </span>
                         <span className="text-xs text-gray-400 font-mono">{authorHandle}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getRankBadgeClass(authorRank)}`}>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getRankBadgeClass(authorRank)}`}
+                        >
                           {authorRank}
                         </span>
                       </div>
@@ -337,11 +255,11 @@ export default function CommentsModal({
                   </p>
 
                   <div className="flex items-center justify-end gap-3 pt-1 pl-10 text-xs">
-                    <button 
+                    <button
                       onClick={() => toggleCommentLike(comment.id)}
                       className={`flex items-center gap-1.5 py-1 px-2.5 rounded-lg transition-colors ${
-                        isLiked 
-                          ? 'text-red-400 bg-red-500/10 font-medium' 
+                        isLiked
+                          ? 'text-red-400 bg-red-500/10 font-medium'
                           : 'text-gray-400 hover:text-red-400 hover:bg-white/5'
                       }`}
                     >
@@ -357,11 +275,17 @@ export default function CommentsModal({
         </div>
 
         {/* Input Footer */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 border-t border-white/10 bg-white/[0.02]">
+        <form
+          onSubmit={handleSubmit}
+          className="p-4 sm:p-5 border-t border-white/10 bg-white/[0.02]"
+        >
           <div className="flex items-center justify-between mb-2 text-xs text-gray-400">
             <span className="flex items-center gap-1.5 font-medium text-gray-300">
               <User size={13} className="text-gold-400" />
-              Posting as <strong className="text-gold-400">{user?.name || 'Campus Student'}</strong> ({user?.handle || '@You'})
+              Posting as <strong className="text-gold-400">
+                {user?.name || 'Campus Student'}
+              </strong>{' '}
+              ({user?.handle || '@You'})
             </span>
             <span className="text-[11px] text-gold-400/80 flex items-center gap-1">
               <ShieldCheck size={12} /> +2 pts per verified comment
@@ -370,6 +294,8 @@ export default function CommentsModal({
 
           <div className="relative flex items-center gap-2">
             <textarea
+              aria-label="Add your perspective"
+              maxLength={2000}
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
               placeholder="Ask a question, share campus tips, or leave a thought..."
@@ -386,6 +312,7 @@ export default function CommentsModal({
               type="submit"
               disabled={!newText.trim() || submitting}
               className="absolute right-3 bottom-3 p-2.5 rounded-lg bg-gradient-to-r from-gold-500 to-amber-500 text-midnight-950 font-bold hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md flex items-center justify-center"
+              aria-label="Post comment"
               title="Post Comment (Ctrl+Enter)"
             >
               {submitting ? (
@@ -398,6 +325,6 @@ export default function CommentsModal({
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

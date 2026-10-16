@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Lock, 
-  User, 
-  Mail, 
-  Eye, 
-  EyeOff, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  ArrowLeft,
+  Lock,
+  User,
+  Mail,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle,
   ShieldCheck,
   ChevronRight,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 import { CAMPUS_DEPARTMENTS } from '../data/departments';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, demoLogin } = useAuth();
+  const { health, stats } = useData();
 
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -26,7 +28,7 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Sign up specific fields
   const [name, setName] = useState('');
@@ -56,14 +58,14 @@ export default function LoginPage() {
           email,
           password,
           department,
-          graduationYear: parseInt(graduationYear, 10)
+          graduationYear: parseInt(graduationYear, 10),
         });
         setSuccessMessage('Account created successfully! Redirecting...');
       } else {
         if (!identifier || !password) {
           throw new Error('Please enter your email or handle and password.');
         }
-        await login(identifier, password);
+        await login(identifier, password, rememberMe);
         setSuccessMessage('Welcome back! Loading your campus dashboard...');
       }
 
@@ -77,17 +79,23 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSSO = () => {
-    setIdentifier('@StudentJohn');
-    setPassword('password123');
-    setSuccessMessage('Google Campus SSO verified: John Doe (@StudentJohn)');
+  const handleDemo = async () => {
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      await demoLogin();
+      navigate('/');
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 relative overflow-hidden bg-midnight-900">
-      
       {/* Background Campus Image Layer matching Dashboard */}
-      <div 
+      <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700 filter brightness-[0.75] contrast-[1.05]"
         style={{ backgroundImage: 'url(/background.jpg)' }}
       >
@@ -104,15 +112,13 @@ export default function LoginPage() {
 
       {/* Main Split Card matching the site's design system */}
       <div className="relative z-10 w-full max-w-[880px] bg-white/95 dark:bg-[#111827]/95 backdrop-blur-2xl rounded-[28px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] border border-white/50 dark:border-white/10 overflow-hidden flex flex-col md:flex-row animate-fade-in-up">
-        
         {/* LEFT COLUMN: Clean Form */}
         <div className="w-full md:w-[52%] p-6 sm:p-8 lg:p-9 flex flex-col justify-between">
-          
           <div>
             {/* Top Navigation */}
             <div className="flex items-center justify-between mb-5">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-charcoal-500 dark:text-gray-400 hover:text-gold-500 transition-colors"
               >
                 <ArrowLeft size={15} /> Back to Campus
@@ -129,8 +135,8 @@ export default function LoginPage() {
                 {isSignUp ? 'Create your DNA' : 'Welcome Back'}
               </h1>
               <p className="text-xs sm:text-sm text-charcoal-600 dark:text-gray-400 mt-1">
-                {isSignUp 
-                  ? 'Join verified students to build the definitive campus knowledge base.' 
+                {isSignUp
+                  ? 'Join verified students to build the definitive campus knowledge base.'
                   : 'Sign in to access verified secrets, building notes, and campus insights.'}
               </p>
             </div>
@@ -152,7 +158,6 @@ export default function LoginPage() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-              
               {isSignUp ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -165,6 +170,7 @@ export default function LoginPage() {
                         <input
                           type="text"
                           required
+                          aria-label="Your name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="Swastika Sinha"
@@ -178,10 +184,13 @@ export default function LoginPage() {
                         Campus Handle
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-2 text-gray-400 font-mono text-sm">@</span>
+                        <span className="absolute left-3.5 top-2 text-gray-400 font-mono text-sm">
+                          @
+                        </span>
                         <input
                           type="text"
                           required
+                          aria-label="Choose a handle"
                           value={handle.replace(/^@/, '')}
                           onChange={(e) => setHandle(e.target.value)}
                           placeholder="SwastikaSinha"
@@ -200,6 +209,7 @@ export default function LoginPage() {
                       <input
                         type="email"
                         required
+                        aria-label="Campus email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="student@campus.edu"
@@ -254,6 +264,7 @@ export default function LoginPage() {
                     <input
                       type="text"
                       required
+                      aria-label="Email or campus handle"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder="e.g. @StudentJohn or john.doe@campus.edu"
@@ -270,9 +281,11 @@ export default function LoginPage() {
                     Password
                   </label>
                   {!isSignUp && (
-                    <button 
-                      type="button" 
-                      onClick={() => alert("Password reset instructions sent to your registered campus email.")}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        alert('Password reset instructions sent to your registered campus email.')
+                      }
                       className="text-[11px] text-gray-500 hover:text-gold-600 dark:hover:text-gold-400 transition-colors"
                     >
                       Forgot password?
@@ -284,6 +297,7 @@ export default function LoginPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    aria-label="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
@@ -291,6 +305,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                   >
@@ -333,25 +348,24 @@ export default function LoginPage() {
               {/* Social Login Separator */}
               <div className="relative flex py-1.5 items-center">
                 <div className="flex-grow border-t border-gray-200 dark:border-charcoal-700"></div>
-                <span className="flex-shrink mx-3 text-gray-400 text-[11px] uppercase font-semibold tracking-wider">or</span>
+                <span className="flex-shrink mx-3 text-gray-400 text-[11px] uppercase font-semibold tracking-wider">
+                  or
+                </span>
                 <div className="flex-grow border-t border-gray-200 dark:border-charcoal-700"></div>
               </div>
 
-              {/* Google Campus SSO Button */}
-              <button
-                type="button"
-                onClick={handleGoogleSSO}
-                className="w-full py-2.5 px-4 rounded-xl border border-gray-200 dark:border-charcoal-700 hover:bg-gray-50 dark:hover:bg-charcoal-800 text-xs font-semibold text-charcoal-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2.5"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.36 24 12 24z"/>
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.36 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                </svg>
-                Sign in with Google Campus SSO
-              </button>
-
+              {/* Local student demo */}
+              {health?.mode === 'demo' && (
+                <button
+                  type="button"
+                  onClick={handleDemo}
+                  disabled={loading}
+                  className="w-full py-2.5 px-4 rounded-xl border border-gray-200 dark:border-charcoal-700 hover:bg-gray-50 dark:hover:bg-charcoal-800 text-xs font-semibold text-charcoal-700 dark:text-gray-300 transition-colors flex items-center justify-center gap-2.5"
+                >
+                  <Sparkles size={17} />
+                  Try the student demo
+                </button>
+              )}
             </form>
           </div>
 
@@ -372,18 +386,21 @@ export default function LoginPage() {
               </button>
             </p>
           </div>
-
         </div>
 
         {/* RIGHT COLUMN: Midnight Navy & Gold Editorial Showcase */}
         <div className="w-full md:w-[48%] relative bg-gradient-to-br from-[#0e1726] via-[#0B1120] to-[#040810] overflow-hidden flex flex-col justify-between p-6 sm:p-8 text-white min-h-[360px] md:min-h-[500px] border-t md:border-t-0 md:border-l border-white/10">
-          
           {/* Subtle Ambient Gold Radial Behind Quote */}
           <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-gold-500/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Geometric Motion Graphics & Dynamic DNA Curves (Pure SVG & CSS) */}
           <div className="absolute inset-0 pointer-events-none opacity-40">
-            <svg className="w-full h-full" viewBox="0 0 400 500" fill="none" preserveAspectRatio="none">
+            <svg
+              className="w-full h-full"
+              viewBox="0 0 400 500"
+              fill="none"
+              preserveAspectRatio="none"
+            >
               <defs>
                 <linearGradient id="goldCurve1" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.35" />
@@ -394,20 +411,69 @@ export default function LoginPage() {
                   <stop offset="100%" stopColor="#0B1120" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
-              
+
               {/* Dynamic Soundwave / DNA Helix Wave */}
-              <path d="M-50,320 Q80,240 180,360 T420,290 L450,550 L-50,550 Z" fill="url(#goldCurve1)" />
-              <path d="M-20,380 Q120,280 260,420 T460,350 L460,550 L-20,550 Z" fill="url(#goldCurve2)" />
-              
+              <path
+                d="M-50,320 Q80,240 180,360 T420,290 L450,550 L-50,550 Z"
+                fill="url(#goldCurve1)"
+              />
+              <path
+                d="M-20,380 Q120,280 260,420 T460,350 L460,550 L-20,550 Z"
+                fill="url(#goldCurve2)"
+              />
+
               {/* Concentric Energy Radii in Warm Gold */}
-              <circle cx="360" cy="180" r="140" stroke="#D4AF37" strokeWidth="1" strokeDasharray="4 6" opacity="0.2" />
-              <circle cx="360" cy="180" r="210" stroke="#D4AF37" strokeWidth="1" strokeDasharray="3 8" opacity="0.15" />
+              <circle
+                cx="360"
+                cy="180"
+                r="140"
+                stroke="#D4AF37"
+                strokeWidth="1"
+                strokeDasharray="4 6"
+                opacity="0.2"
+              />
+              <circle
+                cx="360"
+                cy="180"
+                r="210"
+                stroke="#D4AF37"
+                strokeWidth="1"
+                strokeDasharray="3 8"
+                opacity="0.15"
+              />
               <circle cx="360" cy="180" r="280" stroke="#FEF3C7" strokeWidth="1" opacity="0.1" />
 
               {/* Dynamic Sprint & Genome Accent Vectors */}
-              <line x1="280" y1="260" x2="350" y2="230" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
-              <line x1="290" y1="280" x2="370" y2="245" stroke="#D4AF37" strokeWidth="3" strokeLinecap="round" opacity="0.5" />
-              <line x1="310" y1="300" x2="390" y2="265" stroke="#FEF3C7" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+              <line
+                x1="280"
+                y1="260"
+                x2="350"
+                y2="230"
+                stroke="#D4AF37"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.4"
+              />
+              <line
+                x1="290"
+                y1="280"
+                x2="370"
+                y2="245"
+                stroke="#D4AF37"
+                strokeWidth="3"
+                strokeLinecap="round"
+                opacity="0.5"
+              />
+              <line
+                x1="310"
+                y1="300"
+                x2="390"
+                y2="265"
+                stroke="#FEF3C7"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.6"
+              />
             </svg>
           </div>
 
@@ -425,13 +491,15 @@ export default function LoginPage() {
           {/* Center Editorial Quote in Warm Gold Typography */}
           <div className="relative z-10 my-auto py-6">
             <div className="max-w-xs">
-              <span className="text-gold-400 font-serif italic text-4xl mb-1 block select-none">“</span>
+              <span className="text-gold-400 font-serif italic text-4xl mb-1 block select-none">
+                “
+              </span>
               <p className="font-serif text-2xl sm:text-3xl font-bold leading-tight tracking-tight text-white/95">
                 The unwritten curriculum of college life, mapped by the students who lived it.
               </p>
               <p className="text-[11px] text-gold-300/80 font-sans mt-3.5 uppercase tracking-widest font-semibold flex items-center gap-2">
                 <span className="w-6 h-px bg-gold-400/60 inline-block" />
-                4,200+ Verified Contributions
+                {stats.contributions ?? 0} Shared Strands of Campus DNA
               </p>
             </div>
           </div>
@@ -439,10 +507,14 @@ export default function LoginPage() {
           {/* Bottom Status & Platform Indicator */}
           <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-4">
             <div className="flex flex-col">
-              <span className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Platform Status</span>
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">
+                Platform Status
+              </span>
               <span className="text-xs font-bold text-white flex items-center gap-1.5 mt-0.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                Node API v1.0 • Connected
+                {health?.status === 'healthy'
+                  ? 'Campus DNA • Connected'
+                  : 'Connecting to your campus...'}
               </span>
             </div>
 
@@ -452,11 +524,8 @@ export default function LoginPage() {
               <div className="w-4 h-2 rounded-full bg-white/30" />
             </div>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

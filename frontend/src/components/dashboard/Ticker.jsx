@@ -1,12 +1,12 @@
+import { useData } from '../../context/DataContext';
 import { Activity } from 'lucide-react';
 import VerificationChip from '../common/VerificationChip';
 
 export default function Ticker() {
-  const updates = [
-    { id: 1, text: "Prof. Turing's CS101: Updated to focus on practical projects", verifiedCount: 12 },
-    { id: 2, text: "Library Basement: New silent reading zone confirmed", verifiedCount: 35 },
-    { id: 3, text: "CS Lab 102: Booking now required during peak hours", verifiedCount: 8 }
-  ];
+  const { nodes } = useData();
+  const updates = nodes
+    .slice(0, 5)
+    .map((n) => ({ id: n.id, text: n.title, verifiedCount: n.verification_count }));
 
   return (
     <div className="flex items-center gap-4 py-3 border-y border-gray-200 dark:border-charcoal-700 w-full overflow-hidden bg-white/30 dark:bg-charcoal-800/30 backdrop-blur-sm">
@@ -14,7 +14,7 @@ export default function Ticker() {
         <Activity size={18} className="animate-pulse" />
         <span className="hidden sm:inline">What's Evolving</span>
       </div>
-      
+
       <div className="flex-1 overflow-hidden relative">
         <div className="flex animate-[marquee_20s_linear_infinite] whitespace-nowrap gap-12">
           {updates.map((update, idx) => (

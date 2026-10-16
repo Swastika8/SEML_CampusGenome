@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import { useData } from '../../context/DataContext';
+import { useContribution } from '../../context/ContributionContext';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function DashboardLayout({ children }) {
+  const { openWizard } = useContribution();
+  const { error, refreshData } = useData();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -19,18 +27,26 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gray-50 dark:bg-midnight-900 transition-colors duration-300 flex">
+    <div
+      className={
+        'campus-shell min-h-screen relative bg-gray-50 dark:bg-midnight-900 transition-colors duration-300 flex ' +
+        (isSidebarCollapsed ? 'nav-collapsed' : '')
+      }
+    >
+      <a href="#main-content" className="skip-link">
+        Skip to campus content
+      </a>
       {/* Sidebar */}
-      <Sidebar 
-        isCollapsed={isSidebarCollapsed} 
-        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       {/* Main Content Wrapper */}
-      <div className={`flex-1 relative flex flex-col min-h-screen min-w-0 w-full overflow-x-hidden transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+      <div className="campus-workspace relative flex flex-col min-h-screen min-w-0 transition-all duration-300">
         {/* Background Image with Overlay */}
-        <div 
-          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700"
+        <div
+          className="campus-backdrop fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: 'url(/background.jpg)' }}
         >
           {/* Light mode overlay: 50% white, Dark mode overlay: 70% midnight */}
@@ -39,15 +55,40 @@ export default function DashboardLayout({ children }) {
 
         <div className="relative z-10 flex flex-col min-h-screen">
           <Header />
-          
-          <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-10 flex flex-col">
+
+          <main
+            id="main-content"
+            className="campus-main flex-1 w-full mx-auto flex flex-col"
+            tabIndex={-1}
+          >
+            {error && (
+              <div
+                role="alert"
+                className="mb-5 p-4 rounded-2xl border border-gold-400/30 bg-white/60 dark:bg-midnight-800/70 backdrop-blur-xl text-sm text-charcoal-700 dark:text-gray-300"
+              >
+                <p>{error}</p>
+                <button
+                  className="mt-2 text-gold-600 dark:text-gold-400 underline"
+                  onClick={refreshData}
+                >
+                  Reconnect the strands
+                </button>
+              </div>
+            )}
             {children}
           </main>
 
           {/* Graduation Contribution Banner */}
-          <div className="w-full bg-gold-400 dark:bg-gold-500 text-charcoal-900 py-3 px-4 text-center shadow-lg transform transition-transform translate-y-0">
+          <div className="campus-footer">
             <p className="font-medium text-sm sm:text-base">
-              🎓 Graduating soon? <button className="underline font-bold hover:text-white transition-colors">Leave your DNA.</button> Contribute to the Genome before you leave.
+              🎓 Graduating soon?{' '}
+              <button
+                onClick={() => (user ? openWizard() : navigate('/login'))}
+                className="underline font-bold hover:text-white transition-colors"
+              >
+                Leave your DNA.
+              </button>{' '}
+              Contribute to the Genome before you leave.
             </p>
           </div>
         </div>

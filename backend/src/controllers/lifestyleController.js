@@ -63,8 +63,8 @@ export const getLifestyleSpotById = async (req, res, next) => {
         k.verification_count AS "verifiedBy", k.comment_count AS comments, ls.quote
        FROM knowledge_nodes k
        JOIN lifestyle_nodes ls ON k.id = ls.node_id
-       WHERE k.id = $1 AND k.category = 'Lifestyle'`,
-      [id]
+       WHERE k.id = $1 AND k.category = 'Lifestyle' AND k.status != 'Removed'`,
+      [id],
     );
 
     if (spotRes.rows.length === 0) {

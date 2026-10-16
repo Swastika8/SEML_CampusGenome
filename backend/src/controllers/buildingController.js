@@ -34,7 +34,7 @@ export const getBuildingById = async (req, res, next) => {
         id, name, description, category,
         json_build_object('wifi', wifi, 'quietSpots', quiet_spots, 'history', history) AS details
        FROM buildings WHERE id = $1`,
-      [id]
+      [id],
     );
 
     if (buildingRes.rows.length === 0) {
@@ -62,7 +62,7 @@ export const addBuildingHistory = async (req, res, next) => {
     const newEntry = {
       date: new Date().toISOString().split('T')[0],
       change,
-      author: author || req.user?.handle || '@Anonymous',
+      author: req.user.handle,
     };
 
     const updateRes = await pool.query(
@@ -70,7 +70,7 @@ export const addBuildingHistory = async (req, res, next) => {
        SET history = history || $1::jsonb 
        WHERE id = $2
        RETURNING id, name, history;`,
-      [JSON.stringify([newEntry]), id]
+      [JSON.stringify([newEntry]), id],
     );
 
     if (updateRes.rows.length === 0) {

@@ -42,8 +42,8 @@ export const getOpportunityById = async (req, res, next) => {
         cr.opportunity_status AS status, cr.apply_link AS "applyLink"
        FROM knowledge_nodes k
        JOIN career_nodes cr ON k.id = cr.node_id
-       WHERE k.id = $1 AND k.category = 'Career'`,
-      [id]
+       WHERE k.id = $1 AND k.category = 'Career' AND k.status != 'Removed'`,
+      [id],
     );
 
     if (oppRes.rows.length === 0) {

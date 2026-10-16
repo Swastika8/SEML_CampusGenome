@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, BookOpen, Calendar, Coffee, X, ArrowRight } from 'lucide-react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import LiveClock from '../common/LiveClock';
 import UserDropdown from './UserDropdown';
 import { useContribution } from '../../context/ContributionContext';
@@ -10,23 +10,49 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { openWizard } = useContribution();
-  const { nodes, buildings, courses, events } = useData();
+  const { nodes, buildings, courses, health } = useData();
 
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef(null);
-  
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    const handle = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setIsOpen(true);
+      }
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('keydown', handle);
+    return () => document.removeEventListener('keydown', handle);
+  }, []);
+
   const getPageTitle = (path) => {
     switch (path) {
-      case '/': return 'Overview';
-      case '/map': return 'Interactive Map';
-      case '/academics': return 'Academics Repository';
-      case '/career': return 'Career Connections';
-      case '/communities': return 'Campus Communities';
-      case '/events': return 'Events & News';
-      case '/lifestyle': return 'Lifestyle & Recreation';
-      case '/profile': return 'User Profile';
-      default: return 'Overview';
+      case '/':
+        return 'The common room';
+      case '/map':
+        return 'Campus field guide';
+      case '/academics':
+        return 'Academics Repository';
+      case '/career':
+        return 'Career Connections';
+      case '/communities':
+        return 'Campus Communities';
+      case '/events':
+        return 'Events & News';
+      case '/lifestyle':
+        return 'Lifestyle & Recreation';
+      case '/profile':
+        return 'User Profile';
+      case '/saved':
+        return 'Your pocket';
+      case '/explore':
+        return 'The rabbit hole';
+      default:
+        return 'Overview';
     }
   };
 
@@ -41,37 +67,72 @@ export default function Header() {
   }, []);
 
   // Compute live search results
-  const results = query.trim().length > 1 ? [
-    ...(buildings || [])
-      .filter(b => b.name?.toLowerCase().includes(query.toLowerCase()) || b.description?.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 2)
-      .map(b => ({ title: b.name, subtitle: 'Campus Building & Silent Spots', type: 'map', path: '/map', icon: MapPin })),
-    ...(courses || [])
-      .filter(c => c.title?.toLowerCase().includes(query.toLowerCase()) || c.code?.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 2)
-      .map(c => ({ title: `${c.code} - ${c.title}`, subtitle: `${c.department || 'Academics'} • Prof. ${c.professor || 'Faculty'}`, type: 'academics', path: '/academics', icon: BookOpen })),
-    ...(nodes || [])
-      .filter(n => n.title?.toLowerCase().includes(query.toLowerCase()) || n.description?.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 3)
-      .map(n => ({
-        title: n.title,
-        subtitle: `${n.category} • by ${n.author_handle || '@StudentJohn'}`,
-        type: n.category?.toLowerCase() || 'lifestyle',
-        path: n.category === 'Academics' ? '/academics' : n.category === 'Events' ? '/events' : n.category === 'Career' ? '/career' : '/lifestyle',
-        icon: n.category === 'Events' ? Calendar : Coffee
-      })),
-  ] : [];
+  const results =
+    query.trim().length > 1
+      ? [
+          ...(buildings || [])
+            .filter(
+              (b) =>
+                b.name?.toLowerCase().includes(query.toLowerCase()) ||
+                b.description?.toLowerCase().includes(query.toLowerCase()),
+            )
+            .slice(0, 2)
+            .map((b) => ({
+              title: b.name,
+              subtitle: 'Campus Building & Silent Spots',
+              type: 'map',
+              path: '/map?building=' + b.id,
+              icon: MapPin,
+            })),
+          ...(courses || [])
+            .filter(
+              (c) =>
+                (c.name || c.title)?.toLowerCase().includes(query.toLowerCase()) ||
+                c.code?.toLowerCase().includes(query.toLowerCase()),
+            )
+            .slice(0, 2)
+            .map((c) => ({
+              title: `${c.code} - ${c.name || c.title}`,
+              subtitle: `${c.department || 'Academics'} • Prof. ${c.professor || 'Faculty'}`,
+              type: 'academics',
+              path: '/academics',
+              icon: BookOpen,
+            })),
+          ...(nodes || [])
+            .filter(
+              (n) =>
+                n.title?.toLowerCase().includes(query.toLowerCase()) ||
+                n.description?.toLowerCase().includes(query.toLowerCase()),
+            )
+            .slice(0, 3)
+            .map((n) => ({
+              title: n.title,
+              subtitle: `${n.category} • by ${n.author_handle || '@StudentJohn'}`,
+              type: n.category?.toLowerCase() || 'lifestyle',
+              path: '/nodes/' + n.id,
+              icon: n.category === 'Events' ? Calendar : Coffee,
+            })),
+        ]
+      : [];
 
   return (
-    <header className="relative z-40 flex flex-col w-full max-w-7xl mx-auto pt-6 px-8 gap-6">
+    <header className="campus-header relative z-40">
       {/* Top Bar: Title, Clock, Actions, User Dropdown */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
-        <h1 className="font-serif text-3xl md:text-5xl font-bold text-charcoal-700/80 dark:text-gray-300/80 tracking-tight">
+      <div className="header-topline">
+        <h1 className="header-crumb">
+          <span>g/campus</span>
           {getPageTitle(location.pathname)}
         </h1>
-        <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-end">
-          <LiveClock />
-          <button 
+        <div className="header-actions">
+          <span className="header-clock">
+            <LiveClock />
+          </span>
+          {health?.mode === 'demo' && (
+            <span className="hidden 2xl:inline-flex text-[10px] text-gold-600 dark:text-gold-400 border border-gold-400/25 rounded-full px-2 py-1">
+              Sample campus DNA
+            </span>
+          )}
+          <button
             onClick={() => openWizard()}
             className="bg-charcoal-900 text-white dark:bg-gold-500 dark:text-midnight-900 font-bold rounded-full px-5 py-2 shadow-lg hover:scale-105 transition-transform text-sm cursor-pointer"
           >
@@ -82,14 +143,16 @@ export default function Header() {
       </div>
 
       {/* Centered Search Bar */}
-      <div className="flex justify-center w-full pb-6 mt-4 md:mt-8" ref={searchRef}>
-        <div className="w-full max-w-2xl tour-search mx-4 md:mx-0 relative">
+      <div className="header-search" ref={searchRef}>
+        <div className="w-full tour-search relative">
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-400 group-focus-within:text-gold-500 transition-colors" />
             </div>
             <input
               type="text"
+              ref={searchInputRef}
+              aria-label="Search campus knowledge"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -97,11 +160,13 @@ export default function Header() {
               }}
               onFocus={() => setIsOpen(true)}
               className="block w-full pl-11 pr-10 py-3 border border-gray-200 dark:border-charcoal-700 rounded-full leading-5 bg-white/80 dark:bg-charcoal-800/80 backdrop-blur-md text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-gold-500 sm:text-sm transition-all shadow-sm hover:shadow-md"
-              placeholder="Search for courses, quiet study spots, professors, secret tips..."
+              placeholder="Search the stuff they don't put in the prospectus..."
             />
+            {!query && <kbd className="search-shortcut">Ctrl K</kbd>}
             {query && (
               <button
                 type="button"
+                aria-label="Clear campus search"
                 onClick={() => setQuery('')}
                 className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
               >
@@ -144,19 +209,22 @@ export default function Header() {
                             </span>
                           </div>
                         </div>
-                        <ArrowRight size={14} className="text-gray-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                        <ArrowRight
+                          size={14}
+                          className="text-gray-400 group-hover:translate-x-1 transition-transform shrink-0"
+                        />
                       </button>
                     );
                   })}
                 </div>
               ) : (
                 <div className="p-6 text-center text-xs text-gray-500 dark:text-gray-400">
-                  No verified campus records match "{query}". Try searching "CS", "Library", or "Maggi".
+                  No verified campus records match "{query}". Try searching "CS", "Library", or
+                  "Maggi".
                 </div>
               )}
             </div>
           )}
-
         </div>
       </div>
     </header>

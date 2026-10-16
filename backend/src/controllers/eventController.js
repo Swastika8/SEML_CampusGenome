@@ -11,7 +11,7 @@ export const getEvents = async (req, res, next) => {
         ev.event_date AS date,
         ev.publisher,
         ev.publisher_logo AS "publisherLogo",
-        '2h' AS "timeAgo",
+        k.created_at AS "createdAt",
         ev.image_url AS image,
         ev.venue,
         k.verification_count AS "verifyCount",
@@ -27,7 +27,7 @@ export const getEvents = async (req, res, next) => {
     const topEngaging = eventsRes.rows.slice(0, 3).map((item) => ({
       id: item.id,
       title: item.title,
-      timeAgo: '3h',
+      createdAt: item.createdAt,
       comments: item.commentCount,
     }));
 
@@ -51,8 +51,8 @@ export const getEventById = async (req, res, next) => {
         ev.image_url AS image, ev.event_type AS type
        FROM knowledge_nodes k
        JOIN event_nodes ev ON k.id = ev.node_id
-       WHERE k.id = $1 AND k.category = 'Events'`,
-      [id]
+       WHERE k.id = $1 AND k.category = 'Events' AND k.status != 'Removed'`,
+      [id],
     );
 
     if (eventRes.rows.length === 0) {

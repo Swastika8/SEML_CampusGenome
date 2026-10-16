@@ -32,14 +32,13 @@ export const getAcademicInsights = async (req, res, next) => {
         ac.subject,
         ac.insight_type AS "insightType",
         k.verification_count AS "verifiedBy",
-        k.comment_count AS comments,
-        12 AS reposts
+        k.comment_count AS comments
        FROM knowledge_nodes k
        JOIN academic_nodes ac ON k.id = ac.node_id
        LEFT JOIN users u ON k.user_id = u.id
        ${whereClause}
        ORDER BY k.verification_count DESC;`,
-      params
+      params,
     );
 
     res.status(200).json({
