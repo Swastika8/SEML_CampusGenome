@@ -46,7 +46,7 @@ Paste the result only into Render's secret settings and keep it stable across de
 
 The frontend URL does not need to exist when the API first starts. After Vercel assigns the production URL, update `CORS_ORIGINS` to that exact origin, without a trailing slash or path, and redeploy the API. Multiple approved origins can be comma-separated; individual preview deployments need their own exact origins.
 
-The API applies the additive schema at startup. **Do not run `db:init` on Render**: the managed database already exists. Production starts with empty content and account tables. Register your own account through the hosted frontend. Local demo accounts and PGlite data are not automatically copied.
+The API applies the additive schema at startup and installs the supplied campus plan's 17 reference places. Existing field notes are preserved. **Do not run `db:init` on Render**: the managed database already exists. Production starts with empty post, account and poll-vote tables. Register your own account through the hosted frontend. Local demo accounts and PGlite data are not automatically copied.
 
 Open `https://YOUR-API.onrender.com/api/health` after deployment. Confirm `status` is `healthy` and `mode` is `postgres`.
 

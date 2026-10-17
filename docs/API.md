@@ -71,6 +71,18 @@ Titles are limited to 255 characters; descriptions require 15-10,000 characters.
 | PUT    | `/nodes/:id/rsvp`     | RSVP to a visible event; duplicates prevented; ended events rejected |
 | DELETE | `/nodes/:id/rsvp`     | Cancel this student's RSVP                                           |
 
+## Daily campus dilemma
+
+`GET /pulse` returns today's question, four options with aggregate vote counts, the total, campus date and the signed-in student's `myVote` (or `null`). The campus day uses `Asia/Kolkata`.
+
+`PUT /pulse/vote` requires authentication and JSON `{ "pollDate": "YYYY-MM-DD", "optionId": 0 }`. Options are integers 0-3. Repeated requests are idempotent; choosing another option updates the same daily vote. The unique key is `(poll_date, user_id)`. A stale campus date returns 409.
+
+`DELETE /pulse/vote` requires authentication and JSON `{ "pollDate": "YYYY-MM-DD" }` and removes that student's daily vote. Vote identities are never included in the public response.
+
+## Campus-plan reference data
+
+Building responses include `map_data` for places in the supplied campus plan. It contains the schematic SVG footprint, label placement, order and source marker. Startup installs 17 reference places on both supported database adapters; conflict updates change only geometry and preserve existing names, field notes and other campus data. Legacy demo places stay available through the API with no mapped geometry.
+
 ## Existing resource routes
 
 Read-only category endpoints remain available at `/academics`, `/career`, `/communities`, `/events`, and `/lifestyle`. `/buildings` and `/courses` expose their campus resource collections. Building history writes and course reviews now require authentication and validated text. Public user profiles omit email addresses; `/auth/me` is the student's private account endpoint.

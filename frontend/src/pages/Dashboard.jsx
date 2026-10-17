@@ -14,6 +14,8 @@ import {
 import DashboardLayout from '../components/layout/DashboardLayout';
 import CampusCapsule from '../components/dashboard/CampusCapsule';
 import CampusFeed from '../components/dashboard/CampusFeed';
+import CampusPulse from '../components/dashboard/CampusPulse';
+import ReadingTrail from '../components/dashboard/ReadingTrail';
 import Ticker from '../components/dashboard/Ticker';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -174,6 +176,7 @@ export default function Dashboard() {
               </button>
             </div>
           </section>
+          <CampusPulse />
           <section className="rail-pinboard">
             <Pin size={19} />
             <span>PINNED BY THE COLLECTIVE</span>
@@ -189,6 +192,7 @@ export default function Dashboard() {
             </ol>
             <div className="pinboard-scribble">kindness is a campus flex ↗</div>
           </section>
+          <ReadingTrail />
           <section className="rail-regulars">
             <div className="rail-title">
               <h3>Common room regulars</h3>

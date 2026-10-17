@@ -8,13 +8,14 @@ export const getBuildings = async (req, res, next) => {
         name,
         description,
         category,
+        map_data,
         json_build_object(
           'wifi', wifi,
           'quietSpots', quiet_spots,
           'history', history
         ) AS details
       FROM buildings
-      ORDER BY id ASC;
+      ORDER BY COALESCE((map_data->>'order')::int,1000), id ASC;
     `);
 
     res.status(200).json({
@@ -31,7 +32,7 @@ export const getBuildingById = async (req, res, next) => {
     const { id } = req.params;
     const buildingRes = await pool.query(
       `SELECT 
-        id, name, description, category,
+        id, name, description, category, map_data,
         json_build_object('wifi', wifi, 'quietSpots', quiet_spots, 'history', history) AS details
        FROM buildings WHERE id = $1`,
       [id],

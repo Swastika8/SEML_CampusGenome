@@ -105,6 +105,17 @@ CREATE TABLE IF NOT EXISTS buildings (
     history JSONB DEFAULT '[]'::jsonb
 );
 
+-- Supplied campus-plan geometry is additive. Existing notes and legacy places stay intact.
+ALTER TABLE buildings ADD COLUMN IF NOT EXISTS map_data JSONB;
+
+CREATE TABLE IF NOT EXISTS campus_poll_votes (
+    poll_date DATE NOT NULL,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    option_id SMALLINT NOT NULL CHECK (option_id BETWEEN 0 AND 3),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (poll_date, user_id)
+);
+
 -- 9. Courses Table
 CREATE TABLE IF NOT EXISTS courses (
     id VARCHAR(20) PRIMARY KEY,

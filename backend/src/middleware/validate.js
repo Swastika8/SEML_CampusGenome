@@ -70,6 +70,8 @@ export const nodeSchema = z
 export const commentSchema = z.object({ text: text(2000) });
 export const buildingHistorySchema = z.object({ change: text(2000) });
 export const courseReviewSchema = z.object({ content: text(2000) });
+export const pulseDateSchema = z.object({ pollDate: z.iso.date() });
+export const pulseVoteSchema = pulseDateSchema.extend({ optionId: z.number().int().min(0).max(3) });
 export const listSchema = z.object({
   category: z.enum(categories).optional(),
   search: z.string().trim().max(150).optional(),

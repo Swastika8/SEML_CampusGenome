@@ -45,7 +45,7 @@ export default function InfoSidePanel({ buildingId, onClose }) {
   return (
     <section className="place-panel" aria-label={building.name + ' details'}>
       <header className="place-panel-header">
-        <span className="place-eyebrow">CAMPUS INTEL / {building.id.toUpperCase()}</span>
+        <span className="place-eyebrow">CAMPUS INTEL / {building.category}</span>
         <button aria-label="Close place details" onClick={onClose}>
           <X size={18} />
         </button>

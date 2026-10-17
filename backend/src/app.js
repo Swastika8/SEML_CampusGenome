@@ -15,6 +15,7 @@ import communityRoutes from './routes/communityRoutes.js';
 import buildingRoutes from './routes/buildingRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import pulseRoutes from './routes/pulseRoutes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -103,6 +104,7 @@ for (const [name, router] of Object.entries({
   buildings: buildingRoutes,
   courses: courseRoutes,
   users: userRoutes,
+  pulse: pulseRoutes,
 }))
   app.use('/api/' + name, router);
 app.use(notFoundHandler);

@@ -21,6 +21,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
+import { useReadingTrail } from '../context/ReadingTrailContext';
 import { relativeTime, nodeImage, safeLink } from '../lib/content';
 export default function NodePage() {
   const { id } = useParams();
@@ -28,6 +29,7 @@ export default function NodePage() {
   const { user, token, refreshUser } = useAuth();
   const { refreshData } = useData();
   const notify = useToast();
+  const { track, discard } = useReadingTrail();
   const navigate = useNavigate();
   const [node, setNode] = useState(null);
   const [comments, setComments] = useState([]);
@@ -58,6 +60,9 @@ export default function NodePage() {
       document.getElementById('discussion')?.scrollIntoView({ block: 'start' });
     }
   }, [node?.id, hash]);
+  useEffect(() => {
+    if (node?.id) track({ id: node.id, title: node.title, category: node.category });
+  }, [node?.id, node?.title, node?.category, track]);
   async function action(kind, method = 'POST') {
     if (!user) {
       navigate('/login');
@@ -91,6 +96,7 @@ export default function NodePage() {
     setBusy(true);
     try {
       await api('/nodes/' + id, { method: 'DELETE' });
+      discard(id);
       await refreshData();
       notify('Contribution removed.');
       navigate('/explore');

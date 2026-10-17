@@ -17,6 +17,9 @@ try {
   });
   await page.screenshot({ path: directory + 'dashboard-overview.png', animations: 'disabled' });
   await page
+    .locator('.campus-pulse')
+    .screenshot({ path: directory + 'campus-pulse.png', animations: 'disabled' });
+  await page
     .locator('.common-room-grid')
     .screenshot({ path: directory + 'common-room-feed.png', animations: 'disabled' });
   await page.getByRole('button', { name: "Crack today's capsule" }).click();
@@ -27,8 +30,11 @@ try {
   await page.getByRole('button', { name: 'Toggle Theme' }).click();
   await page.screenshot({ path: directory + 'dashboard-midnight.png', animations: 'disabled' });
   await page.getByRole('button', { name: 'Toggle Theme' }).click();
-  await page.goto(base + '/map?building=b2', { waitUntil: 'networkidle' });
+  await page.goto(base + '/map?building=architecture', { waitUntil: 'networkidle' });
   await page.screenshot({ path: directory + 'map-desktop.png', animations: 'disabled' });
+  await page
+    .locator('.supplied-campus-map')
+    .screenshot({ path: directory + 'campus-plan.png', animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
     path: directory + 'map-mobile.png',

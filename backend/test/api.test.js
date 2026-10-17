@@ -15,6 +15,8 @@ process.env.JWT_SECRET = 'campus-genome-isolated-integration-test-secret';
 const { default: app } = await import('../src/app.js');
 const { default: pool, transaction } = await import('../src/config/db.js');
 const { bootstrap } = await import('../src/db/bootstrap.js');
+const { applyCampusMap } = await import('../src/db/campusMap.js');
+const { campusPollDate } = await import('../src/controllers/pulseController.js');
 let server, base, token, otherToken, createdId;
 async function request(path, { method = 'GET', body, auth = token, headers = {} } = {}) {
   const response = await fetch(base + path, {
@@ -93,6 +95,8 @@ test('guest writes are rejected across every write surface', async () => {
     ['/nodes/1/rsvp', 'PUT'],
     ['/buildings/b1/history', 'POST'],
     ['/courses/c1/reviews', 'POST'],
+    ['/pulse/vote', 'PUT'],
+    ['/pulse/vote', 'DELETE'],
   ]) {
     assert.equal((await request(path, { method, body: {}, auth: null })).status, 401, path);
   }
@@ -340,4 +344,101 @@ test('security headers and CORS do not trust arbitrary origins', async () => {
   assert.equal(denied.headers.get('x-powered-by'), null);
   assert.ok(denied.headers.get('x-request-id'));
   assert.equal(denied.headers.get('x-content-type-options'), 'nosniff');
+});
+
+test('the supplied campus plan loads all places and preserves field notes on reseeding', async () => {
+  const places = (await request('/buildings')).body.data.filter((place) => place.map_data);
+  assert.equal(places.length, 17);
+  assert.equal(places.filter((place) => place.category === 'Entrance').length, 4);
+  for (const name of [
+    'Architecture Building',
+    'A.S. & H. Building (06)',
+    'Mechanical Building (09)',
+    'New CS Building',
+    'Gate 04',
+  ]) {
+    assert.ok(
+      places.some((place) => place.name === name),
+      name,
+    );
+  }
+  assert.ok(places.every((place) => place.details.wifi === null));
+  const result = await request('/buildings/architecture/history', {
+    method: 'POST',
+    body: { change: 'An integration-test field note.', author: 'forged-author' },
+  });
+  assert.equal(result.status, 200);
+  await applyCampusMap(pool);
+  await applyCampusMap(pool);
+  const place = (await request('/buildings/architecture')).body.data;
+  assert.ok(
+    place.details.history.some(
+      (entry) =>
+        entry.change === 'An integration-test field note.' && entry.author === '@StudentJohn',
+    ),
+  );
+  assert.equal(
+    (await request('/buildings')).body.data.filter((place) => place.map_data).length,
+    17,
+  );
+});
+
+test('daily campus polls use the campus midnight and expose only aggregate results', async () => {
+  assert.equal(campusPollDate(new Date('2026-10-18T18:29:59Z')), '2026-10-18');
+  assert.equal(campusPollDate(new Date('2026-10-18T18:30:00Z')), '2026-10-19');
+  const poll = await request('/pulse', { auth: null });
+  assert.equal(poll.status, 200);
+  assert.equal(poll.body.data.date, campusPollDate());
+  assert.equal(poll.body.data.options.length, 4);
+  assert.equal(poll.body.data.totalVotes, 0);
+  assert.equal(poll.body.data.myVote, null);
+  assert.ok(!JSON.stringify(poll.body).includes('user_id'));
+});
+
+test('poll votes are idempotent, changeable, private and removable', async () => {
+  const pollDate = campusPollDate();
+  for (let i = 0; i < 2; i++) {
+    const result = await request('/pulse/vote', { method: 'PUT', body: { pollDate, optionId: 0 } });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.data.totalVotes, 1);
+    assert.equal(result.body.data.myVote, 0);
+  }
+  await Promise.all([
+    request('/pulse/vote', { method: 'PUT', body: { pollDate, optionId: 3 } }),
+    request('/pulse/vote', { method: 'PUT', body: { pollDate, optionId: 1 }, auth: otherToken }),
+  ]);
+  const mine = (await request('/pulse')).body.data;
+  assert.equal(mine.totalVotes, 2);
+  assert.equal(mine.myVote, 3);
+  assert.equal(
+    mine.options.reduce((sum, option) => sum + option.votes, 0),
+    2,
+  );
+  assert.equal((await request('/pulse', { auth: otherToken })).body.data.myVote, 1);
+  assert.equal((await request('/pulse', { auth: null })).body.data.myVote, null);
+  for (let i = 0; i < 2; i++)
+    await request('/pulse/vote', { method: 'DELETE', body: { pollDate } });
+  assert.equal((await request('/pulse')).body.data.totalVotes, 1);
+  await request('/pulse/vote', { method: 'DELETE', body: { pollDate }, auth: otherToken });
+  assert.equal((await request('/pulse')).body.data.totalVotes, 0);
+});
+
+test('poll validation rejects stale dates and invalid choices without changing totals', async () => {
+  const pollDate = campusPollDate();
+  assert.equal(
+    (await request('/pulse/vote', { method: 'PUT', body: { pollDate: '1999-01-01', optionId: 0 } }))
+      .status,
+    409,
+  );
+  for (const optionId of [-1, 4, '1', null]) {
+    assert.equal(
+      (await request('/pulse/vote', { method: 'PUT', body: { pollDate, optionId } })).status,
+      400,
+    );
+  }
+  assert.equal((await request('/pulse')).body.data.totalVotes, 0);
+  await request('/pulse/vote', { method: 'PUT', body: { pollDate, optionId: 2, user_id: 99999 } });
+  assert.equal((await request('/pulse')).body.data.myVote, 2);
+  assert.equal((await request('/pulse', { auth: otherToken })).body.data.myVote, null);
+  await request('/pulse/vote', { method: 'DELETE', body: { pollDate } });
 });

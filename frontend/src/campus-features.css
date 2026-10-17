@@ -1,0 +1,434 @@
+/* Small additions to the common room, using its existing paper-and-gold palette. */
+.campus-pulse,
+.reading-trail {
+  background: var(--room-paper);
+  border: 1px solid var(--room-border);
+  border-radius: 13px;
+  padding: 20px;
+}
+.campus-pulse .rail-kicker {
+  gap: 6px;
+  line-height: 1.7;
+  font-size: 8px;
+}
+.campus-pulse .rail-kicker > span {
+  margin-left: auto;
+  color: var(--room-gold);
+  font-size: 21px;
+}
+.campus-pulse h3 {
+  font:
+    25px/1.2 Georgia,
+    serif;
+  letter-spacing: -0.6px;
+  margin: 14px 0 18px;
+}
+.pulse-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pulse-options > button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 10px;
+  border: 1px solid var(--room-border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.pulse-options > button:hover {
+  border-color: #c3a055;
+}
+.pulse-options > button[aria-pressed='true'] {
+  border-color: #bd9740;
+  color: var(--room-gold);
+}
+.pulse-options > button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+.pulse-option-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--vote-width);
+  background: #d9b34e17;
+  transition: width 0.35s;
+}
+.pulse-option-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+}
+.pulse-option-label svg {
+  flex-shrink: 0;
+}
+.pulse-percent {
+  position: relative;
+  color: var(--room-muted);
+  font: 9px monospace;
+  flex-shrink: 0;
+}
+.pulse-totals {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 9px;
+  color: var(--room-muted);
+  line-height: 1.7;
+}
+.pulse-totals > button {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--room-gold);
+  text-decoration: underline;
+}
+.pulse-footnote {
+  color: var(--room-muted);
+  font-size: 8px;
+  line-height: 1.8;
+  border-top: 1px dashed var(--room-border);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.pulse-loading,
+.pulse-error {
+  color: var(--room-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 15px 0 0;
+}
+.pulse-error button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  color: var(--room-gold);
+}
+.reading-trail .rail-title {
+  margin-top: 0;
+}
+.reading-trail h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.reading-trail h3 svg {
+  color: var(--room-gold);
+}
+.reading-trail .rail-title > button {
+  padding: 5px;
+  color: var(--room-muted);
+  border-radius: 4px;
+}
+.reading-trail .rail-title > button:hover {
+  background: var(--room-soft);
+}
+.reading-trail > p {
+  font-size: 11px;
+  color: var(--room-muted);
+  line-height: 1.9;
+}
+.reading-trail-list {
+  display: flex;
+  flex-direction: column;
+}
+.reading-trail-list > a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--room-border);
+}
+.reading-trail-list > a:last-child {
+  border-bottom: 0;
+}
+.reading-trail-list > a > span {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: var(--room-soft);
+  color: var(--room-gold);
+  font-size: 10px;
+}
+.reading-trail-list > a > div {
+  min-width: 0;
+  flex: 1;
+}
+.reading-trail-list small {
+  display: block;
+  color: var(--room-muted);
+  font-size: 8px;
+  margin-bottom: 4px;
+}
+.reading-trail-list strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font:
+    14px/1.4 Georgia,
+    serif;
+}
+.reading-trail-list > a > svg {
+  color: var(--room-muted);
+  flex-shrink: 0;
+}
+.reading-trail-list > a:hover strong {
+  color: var(--room-gold);
+}
+.reading-trail-privacy {
+  display: block;
+  font-size: 8px;
+  color: var(--room-muted);
+  line-height: 1.7;
+  margin-top: 12px;
+}
+.feed-sort {
+  flex-wrap: wrap;
+}
+.feed-sort > .library-mode-toggle {
+  margin-left: auto;
+  font-size: 9px;
+  gap: 5px;
+  border: 1px solid var(--room-border);
+}
+.feed-sort > .library-mode-toggle[aria-pressed='true'] {
+  color: var(--room-gold);
+  background: #d9b34e1c;
+  border-color: #c3a055;
+}
+.library-mode .thread-thumb {
+  display: none;
+}
+.library-mode .thread-copy > p {
+  -webkit-line-clamp: 4;
+  line-height: 1.95;
+}
+.library-mode .thread-card {
+  padding-top: 24px;
+  padding-bottom: 21px;
+}
+.supplied-campus-map {
+  aspect-ratio: 620/480;
+  max-height: none;
+}
+.map-plan-callout {
+  stroke: #a29d8b;
+  stroke-width: 1.2;
+  fill: none;
+}
+.map-place-shadow {
+  fill: #77715414;
+}
+.map-place-shape {
+  fill: #fbf3db;
+  stroke: #b6a574;
+  stroke-width: 1.3;
+  transition:
+    fill 0.2s,
+    stroke 0.2s;
+}
+.map-group-hostel .map-place-shape {
+  fill: #f1e6e5;
+  stroke: #bb9e9a;
+}
+.map-group-recreation .map-place-shape {
+  fill: #e6eddf;
+  stroke: #9dad8e;
+}
+.map-group-entrance .map-place-shape {
+  fill: #e7ebf0;
+  stroke: #98a6b5;
+}
+.campus-map-place {
+  cursor: pointer;
+}
+.campus-map-place:hover .map-place-shape,
+.campus-map-place.is-active .map-place-shape {
+  fill: #e8c66c;
+  stroke: #9f7d26;
+  stroke-width: 2;
+}
+.campus-map-place:focus {
+  outline: none;
+}
+.campus-map-place:focus-visible .map-place-shape {
+  stroke: #79581c;
+  stroke-width: 3;
+}
+.map-place-label {
+  font:
+    10px Arial,
+    sans-serif;
+  fill: #625e52;
+  pointer-events: none;
+}
+.map-place-label.inside-label {
+  font-size: 8px;
+  font-weight: 600;
+}
+.campus-map-place.is-active .map-place-label {
+  fill: #795b1d;
+  font-weight: 700;
+}
+.map-plan-signature {
+  font:
+    italic 12px Georgia,
+    serif;
+  fill: #a09980;
+}
+.map-source-tag {
+  margin-left: auto;
+  font-size: 7px;
+  letter-spacing: 0.05em;
+  color: var(--room-gold);
+  text-align: right;
+}
+.map-plan-legend {
+  display: flex;
+  gap: 13px;
+  flex-wrap: wrap;
+  margin: 17px 0 0;
+  font-size: 9px;
+  color: var(--room-muted);
+}
+.map-plan-legend > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.map-plan-legend > span::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: #e3d096;
+}
+.map-plan-legend > .legend-hostel::before {
+  background: #ddbfbd;
+}
+.map-plan-legend > .legend-recreation::before {
+  background: #c1d0b3;
+}
+.map-plan-legend > .legend-entrance::before {
+  background: #becadb;
+}
+.place-directory-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--room-border);
+  border-radius: 8px;
+  padding: 11px;
+  margin-top: 19px;
+  color: var(--room-muted);
+}
+.place-directory-search > input {
+  width: 100%;
+  min-width: 0;
+  font-size: 11px;
+  outline: none;
+  background: transparent;
+  color: var(--room-ink);
+}
+.place-directory-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 12px 0 -5px;
+}
+.place-directory-filters > button {
+  padding: 6px 9px;
+  border: 1px solid var(--room-border);
+  border-radius: 5px;
+  font-size: 9px;
+  color: var(--room-muted);
+}
+.place-directory-filters > button[aria-pressed='true'] {
+  border-color: #bf9d4e;
+  color: var(--room-gold);
+  background: #e6bc5c15;
+}
+.place-directory-empty {
+  font-size: 11px;
+  color: var(--room-muted);
+  margin: 25px 0 5px;
+  line-height: 1.8;
+}
+.dark .map-place-shadow {
+  fill: #0003;
+}
+.dark .map-place-shape {
+  fill: #3c382c;
+  stroke: #9b8e6c;
+}
+.dark .map-group-hostel .map-place-shape {
+  fill: #423438;
+  stroke: #a48c91;
+}
+.dark .map-group-recreation .map-place-shape {
+  fill: #2c3c30;
+  stroke: #7d9279;
+}
+.dark .map-group-entrance .map-place-shape {
+  fill: #2e3845;
+  stroke: #8b9bae;
+}
+.dark .map-place-label {
+  fill: #c3c1b4;
+}
+.dark .campus-map-place:hover .map-place-shape,
+.dark .campus-map-place.is-active .map-place-shape {
+  fill: #9f823f;
+  stroke: #e6c270;
+}
+.dark .campus-map-place.is-active .map-place-label {
+  fill: #f5d383;
+}
+@media (min-width: 601px) and (max-width: 800px) {
+  .campus-pulse,
+  .reading-trail {
+    align-self: start;
+  }
+}
+@media (max-width: 600px) {
+  .feed-sort > .library-mode-toggle {
+    font-size: 8px;
+    padding: 7px 9px;
+  }
+  .supplied-campus-map {
+    aspect-ratio: 620/480;
+  }
+  .map-plan-legend {
+    gap: 10px;
+    font-size: 8px;
+  }
+  .map-source-tag {
+    display: none;
+  }
+  .place-directory-filters {
+    gap: 5px;
+  }
+  .place-directory-filters > button {
+    padding: 6px 7px;
+    font-size: 8px;
+  }
+  .campus-pulse,
+  .reading-trail {
+    padding: 20px;
+  }
+}

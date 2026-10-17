@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Flame, Clock3, ArrowUp, ArrowDown, RefreshCw, Sparkles } from 'lucide-react';
+import { Flame, Clock3, ArrowUp, ArrowDown, RefreshCw, Sparkles, BookOpen } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -21,6 +21,22 @@ export default function CampusFeed() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [libraryMode, setLibraryMode] = useState(() => {
+    try {
+      return localStorage.getItem('campus_library_mode') === 'on';
+    } catch {
+      return false;
+    }
+  });
+  function toggleLibraryMode() {
+    const next = !libraryMode;
+    setLibraryMode(next);
+    try {
+      localStorage.setItem('campus_library_mode', next ? 'on' : 'off');
+    } catch {
+      /* A quiet session still works without storage. */
+    }
+  }
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -89,7 +105,15 @@ export default function CampusFeed() {
             {label}
           </button>
         ))}
-        <span>Good intel travels.</span>
+        <button
+          className="library-mode-toggle"
+          aria-pressed={libraryMode}
+          onClick={toggleLibraryMode}
+          title="Less imagery. More room for words."
+        >
+          <BookOpen size={14} />
+          {libraryMode ? 'Exit library mode' : 'Library mode'}
+        </button>
       </div>
       {error ? (
         <div className="feed-empty">
@@ -101,7 +125,7 @@ export default function CampusFeed() {
           </button>
         </div>
       ) : (
-        <div className="thread-list" aria-busy={loading}>
+        <div className={'thread-list' + (libraryMode ? ' library-mode' : '')} aria-busy={loading}>
           {loading && !result.data.length
             ? [1, 2, 3].map((n) => <div className="thread-skeleton" key={n} />)
             : result.data.map((node) => <ThreadCard key={node.id} node={node} />)}

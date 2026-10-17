@@ -24,7 +24,7 @@ MUTED = colors.HexColor("#758095")
 SOFT = colors.HexColor("#fdf4d8")
 LINE = colors.HexColor("#e9dfc0")
 CREAM = colors.HexColor("#fff9e8")
-DATE = "16 OCTOBER 2026"
+DATE = "18 OCTOBER 2026"
 c = canvas.Canvas(str(OUT), pagesize=A4)
 c.setTitle("CampusGenome | Product and Engineering Upgrade")
 c.setAuthor("CampusGenome project handover")
@@ -99,7 +99,7 @@ p("An unofficial campus common room, full of student lore.<br/>Gold, whimsy, and
 label("FRONTEND  +  BACKEND  +  DELIVERY NOTES", M, 359, colors.HexColor("#e4c96b"))
 c.setFillColor(CREAM)
 c.roundRect(M, 111, CW, 207, 12, fill=1, stroke=0)
-for x, number, caption in [(M + 23, "42", "automated checks passed"), (M + 190, "2", "database engines verified"), (M + 352, "0", "known npm advisories*")]:
+for x, number, caption in [(M + 23, "54", "automated checks passed"), (M + 190, "2", "database engines verified"), (M + 352, "0", "known npm advisories*")]:
     p(number, x, 290, 135, 36, "Editorial")
     p(caption, x, 232, 135, 8.5, color=MUTED)
 p("Built on the existing CampusGenome project. Existing campus data and UML models were preserved. This report explains the finished work, the choices behind it, and how to run it.", M + 23, 183, CW - 46, 9, color=MUTED)
@@ -118,19 +118,19 @@ c.drawImage(str(shot), M, 312, width=CW, height=CW * 1000 / 1440, preserveAspect
 y = 284
 y = note("A campus common room, with character.", "Readable paper-like posts, useful voting rails, topic channels, student handles and flairs bring an unofficial forum rhythm. Gold accents, a serif hero, taped notes, hand-drawn details and a faint campus backdrop keep the whimsy.", M, y)
 y = note("Less clutter. More room for the good stuff.", "The header is compact, search stays within reach, posts form one clear reading column, and the side rail holds community context. The illustrated map now has a dedicated place panel; mobile stacks it below the map.", M, y)
-y = note("Little rituals, real student knowledge.", "The daily DNA capsule, optional side quests and private pocket remain. Students can now pin authenticated field notes to campus buildings. Votes, replies, saved finds and field notes use the API and survive reloads.", M, y)
+y = note("Little rituals, real student knowledge.", "A daily campus dilemma adds one changeable vote per account. A private browser reading trail helps students revisit their rabbit holes, and library mode quietens the feed. The map now follows the owner-supplied campus plan.", M, y)
 c.showPage()
 
 # 3 / Feature rationale
 page(3, "02  /  WHAT WAS ADDED", "For the plot. And the people.", "A creative common room built around useful student-to-student knowledge.")
 features = [
-    ("01", "An unofficial campus feed", "The common room replaces the oversized overview panel with readable posts, author handles, flairs, image thumbnails and a compact composer. A pinned community note and contributor karma add a student-run feel."),
-    ("02", "Helpful votes, replies and a private pocket", "The voting rail uses existing peer-verification records. Students can mark useful posts, open their replies, save finds and copy share links. Counts and saved state come from the server."),
-    ("03", "Channels for every campus rabbit hole", "Exam survival, After class, Future you, What's happening and Find your people organize real posts. Buzzing, Fresh and Most helpful sorts query the API, and paginated results stay bounded."),
-    ("04", "A field guide with breathing room", "The map keeps its original building shapes and adds paper-grid illustration, numbered places, persistent selection and a usable directory. A single details panel fits beside it on desktop and below it on mobile."),
-    ("05", "Leave a little local lore", "Students can pin field notes to a building using its existing authenticated history endpoint. Notes show the server-selected author and date and remain after reload. Wi-Fi and quiet-spot details have readable accordions."),
-    ("06", "Keep the tiny campus rituals", "The daily DNA capsule, gold confetti, optional side quests, saved pocket, mood forecast and shuffled event feed remain. Sticky notes, doodles and gold details carry the personality through the cleaner layout."),
-    ("07", "Keep the conversations dependable", "Contribution forms, comments, RSVPs and protected removal remain connected to the backend. Search links open the selected place. Cancelled response parsing now propagates correctly, preventing a feed render failure."),
+    ("01", "The common room stays familiar", "The existing gold, paper, serif and midnight style remains. Channels, useful voting rails, replies, pocket saves and share links stay connected to the API. These additions fit into the existing layout."),
+    ("02", "A daily campus dilemma", "A rotating four-choice poll resets at midnight in campus time (Asia/Kolkata). Signed-in students get one changeable vote per day and can undo it. Only aggregate totals are public; stale submissions are rejected."),
+    ("03", "Recent rabbit holes", "A six-item reading trail makes previously opened posts easy to find. It stays in browser storage, is separated by account, waits for authentication to resolve, and has a clear-history control."),
+    ("04", "Library mode", "An optional, remembered reading preference hides post photos and gives summaries more room. The default feed appearance stays intact. It needs no server setting, external service or additional dependency."),
+    ("05", "Your supplied campus plan", "Seventeen selectable places follow the owner's image: academic blocks, hostels, playground, badminton court, lawn and all four gates. Search and category filters help students find a place; selection stays in the URL."),
+    ("06", "A field guide that survives deployment", "Map reference data is installed on both demo and hosted PostgreSQL startup. Reapplying it preserves existing field notes and campus data. Missing Wi-Fi and quiet-spot details stay explicitly unverified."),
+    ("07", "Keep the useful campus rituals", "Daily DNA capsules, gold confetti, side quests, private bookmarks, event RSVPs and real discussions remain. Field notes let students add the knowledge the supplied schematic does not contain."),
 ]
 y = 658
 for number, title, description in features:
@@ -187,9 +187,9 @@ c.showPage()
 page(6, "05  /  VALIDATION", "Tested through the whole journey.", "Checks cover correctness, state persistence, authorization, and the actual browser experience.")
 rows = [
     ["Check", "Result", "Evidence / scope"],
-    ["Embedded SQL API suite", "14 / 14 PASS", "PGlite in-memory database; real HTTP requests and SQL transactions."],
-    ["Native PostgreSQL API suite", "14 / 14 PASS", "The same suite against the configured local PostgreSQL server, in a uniquely named temporary schema."],
-    ["Browser suite", "14 / 14 PASS", "Microsoft Edge: existing student workflows plus common-room channel filters, sorting, persistent helpful votes, readable map panels and authenticated field notes."],
+    ["Embedded SQL API suite", "18 / 18 PASS", "PGlite: original HTTP/SQL workflows plus campus-plan initialization, midnight boundaries, vote uniqueness, privacy, stale dates and undo."],
+    ["Native PostgreSQL API suite", "18 / 18 PASS", "The same suite against the configured PostgreSQL server in an isolated temporary schema; reference-map reseeding preserves field notes."],
+    ["Browser suite", "18 / 18 PASS", "Microsoft Edge: student workflows, searchable campus plan, poll persistence and undo, account-separated reading trails, and remembered library mode."],
     ["Responsive checks", "PASS", "320, 390, 768, 1024 and 1440 px widths; dashboard, discovery, map and login; no horizontal overflow."],
     ["Frontend lint + build", "PASS", "Oxlint with no warnings; Vite production build completed successfully."],
     ["Dependency audits", "0 advisories", "npm audit for both frontend and backend at delivery; compatible patches applied and unused dependency chains removed."],
@@ -214,6 +214,15 @@ y = note("06  Before a public deployment", "Supply real campus content and infra
 c.setStrokeColor(LINE); c.line(M, y - 4, W - M, y - 4)
 label("OFFICIAL IMPLEMENTATION REFERENCES", M, y - 24)
 p('<link href="https://pglite.dev/docs/api" color="#0b1120">PGlite API</link>  |  <link href="https://vite.dev/guide/env-and-mode" color="#0b1120">Vite environment configuration</link>  |  <link href="https://github.com/expressjs/expressjs.com/blob/main/src/content/pages/en/advanced/best-practice-security.mdx" color="#0b1120">Express security guidance</link>', M, y - 35, CW, 8)
+c.showPage()
+# 8 / Supplied campus plan
+page(8, "07  /  YOUR CAMPUS PLAN", "Your campus, brought to life.", "The owner's supplied layout becomes a selectable, searchable field guide.")
+map_shot = ROOT / "tmp" / "qa" / "campus-plan.png"
+if not map_shot.exists():
+    raise FileNotFoundError("Capture the reviewed campus-plan screenshot before generating the report.")
+c.drawImage(str(map_shot), M, 245, width=CW, height=CW * 480 / 620, preserveAspectRatio=True, mask="auto")
+y = note("Seventeen familiar places, in their supplied positions.", "The plan includes the academic blocks, old and new hostels, playground, badminton court, lawn and Gates 01-04. The Mechanical Building keeps its angled footprint. The New CS Building retains its callout. Colours group academics, hostels, outdoors and gates.", M, 223)
+y = note("A useful reference, with honest boundaries.", "Every place opens its own field-note panel. Search and filters work on small screens; selection is shareable by URL. The diagram is schematic, with no inferred distances or Wi-Fi claims. Additive initialization preserves existing notes and makes the plan available on a fresh hosted database.", M, y)
 c.showPage()
 c.save()
 print(OUT)

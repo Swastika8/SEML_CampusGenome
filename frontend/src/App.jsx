@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { ContributionProvider } from './context/ContributionContext';
 import { ToastProvider } from './context/ToastContext';
+import { ReadingTrailProvider } from './context/ReadingTrailContext';
 import Dashboard from './pages/Dashboard';
 import ExplorePage from './pages/ExplorePage';
 import MapPage from './pages/MapPage';
@@ -22,43 +23,47 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <ToastProvider>
-            <DataProvider>
-              <ContributionProvider>
-                <ContributionModal />
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/explore" element={<ExplorePage />} />
-                  <Route path="/saved" element={<ExplorePage saved />} />
-                  <Route path="/map" element={<MapPage />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/nodes/:id" element={<NodePage />} />
-                  <Route path="/events/:id" element={<NodePage />} />
-                  {['Academics', 'Career', 'Communities', 'Events', 'Lifestyle'].map((category) => (
-                    <Route
-                      key={category}
-                      path={'/' + category.toLowerCase()}
-                      element={
-                        category === 'Academics' ? (
-                          <AcademicsPage />
-                        ) : category === 'Career' ? (
-                          <CareerPage />
-                        ) : category === 'Communities' ? (
-                          <CommunitiesPage />
-                        ) : category === 'Events' ? (
-                          <EventsPage />
-                        ) : (
-                          <LifestylePage />
-                        )
-                      }
-                    />
-                  ))}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </ContributionProvider>
-            </DataProvider>
-          </ToastProvider>
+          <ReadingTrailProvider>
+            <ToastProvider>
+              <DataProvider>
+                <ContributionProvider>
+                  <ContributionModal />
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/explore" element={<ExplorePage />} />
+                    <Route path="/saved" element={<ExplorePage saved />} />
+                    <Route path="/map" element={<MapPage />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/nodes/:id" element={<NodePage />} />
+                    <Route path="/events/:id" element={<NodePage />} />
+                    {['Academics', 'Career', 'Communities', 'Events', 'Lifestyle'].map(
+                      (category) => (
+                        <Route
+                          key={category}
+                          path={'/' + category.toLowerCase()}
+                          element={
+                            category === 'Academics' ? (
+                              <AcademicsPage />
+                            ) : category === 'Career' ? (
+                              <CareerPage />
+                            ) : category === 'Communities' ? (
+                              <CommunitiesPage />
+                            ) : category === 'Events' ? (
+                              <EventsPage />
+                            ) : (
+                              <LifestylePage />
+                            )
+                          }
+                        />
+                      ),
+                    )}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </ContributionProvider>
+              </DataProvider>
+            </ToastProvider>
+          </ReadingTrailProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

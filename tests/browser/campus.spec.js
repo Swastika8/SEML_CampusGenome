@@ -286,9 +286,13 @@ test('campus field guide stays readable and pins authenticated notes', async ({
   for (const width of [390, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/map');
-    await page.getByRole('button', { name: 'Central Library', exact: true }).click();
-    await expect(page.getByRole('region', { name: 'Central Library details' })).toHaveCount(1);
-    await expect(page.getByRole('heading', { name: 'Central Library', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Architecture Building', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Architecture Building details' })).toHaveCount(
+      1,
+    );
+    await expect(
+      page.getByRole('heading', { name: 'Architecture Building', exact: true }),
+    ).toBeVisible();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
     ).toBeLessThanOrEqual(1);
@@ -311,4 +315,90 @@ test('campus field guide stays readable and pins authenticated notes', async ({
   await expect(page.locator('.field-notes-list')).toContainText('@StudentJohn');
   await page.getByRole('button', { name: 'Close place details' }).click();
   await expect(page.locator('.place-panel')).toHaveCount(0);
+});
+
+test('daily campus dilemma remembers one changeable vote and supports undo', async ({
+  page,
+  request,
+}) => {
+  await studentSession(page, request);
+  await page.goto('/');
+  const poll = page.getByRole('region', { name: 'Daily campus dilemma' });
+  const options = poll.locator('.pulse-options button');
+  await expect(options).toHaveCount(4);
+  await options.nth(1).click();
+  await expect(options.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(poll.locator('.pulse-totals')).toContainText('1 student has weighed in');
+  await page.reload();
+  await expect(options.nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await options.nth(2).click();
+  await expect(options.nth(2)).toHaveAttribute('aria-pressed', 'true');
+  await expect(options.nth(1)).toHaveAttribute('aria-pressed', 'false');
+  await expect(poll.locator('.pulse-totals')).toContainText('1 student has weighed in');
+  await poll.getByRole('button', { name: 'Undo vote', exact: true }).click();
+  await expect(poll.locator('.pulse-totals')).toContainText('0 students have weighed in');
+});
+
+test('reading trail persists locally, stays separate from guests and clears', async ({
+  page,
+  request,
+}) => {
+  await studentSession(page, request);
+  await page.goto('/nodes/22');
+  await expect(page.locator('.article h1')).toHaveText('Mountaineering Expedition Group');
+  await page.goto('/');
+  const trail = page.getByRole('region', { name: 'Recent rabbit holes' });
+  await expect(trail).toContainText('Mountaineering Expedition Group');
+  await page.reload();
+  await expect(trail).toContainText('Mountaineering Expedition Group');
+  const guest = await page.context().newPage();
+  await guest.goto('/');
+  await expect(guest.getByRole('region', { name: 'Recent rabbit holes' })).not.toContainText(
+    'Mountaineering Expedition Group',
+  );
+  await guest.close();
+  await page.goto('/nodes/9');
+  await expect(page.locator('.article h1')).toHaveText('The Botanical Quad');
+  await page.goto('/');
+  await expect(trail.locator('.reading-trail-list a').first()).toContainText('The Botanical Quad');
+  await trail.getByRole('button', { name: 'Clear reading trail' }).click();
+  await page.reload();
+  await expect(trail.locator('.reading-trail-list a')).toHaveCount(0);
+});
+
+test('library mode hides post images and remembers the quiet reading preference', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const feed = page.getByRole('region', { name: 'Campus conversation feed' });
+  await expect(feed.locator('.thread-thumb').first()).toBeVisible();
+  await feed.getByRole('button', { name: 'Library mode', exact: true }).click();
+  await expect(feed.locator('.thread-thumb').first()).toBeHidden();
+  await page.reload();
+  await expect(
+    feed.getByRole('button', { name: 'Exit library mode', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(feed.locator('.thread-thumb').first()).toBeHidden();
+  await feed.getByRole('button', { name: 'Exit library mode', exact: true }).click();
+  await expect(feed.locator('.thread-thumb').first()).toBeVisible();
+});
+
+test('the supplied plan exposes seventeen places with searchable gates and shareable selection', async ({
+  page,
+}) => {
+  await page.goto('/map');
+  await expect(page.locator('.campus-map-place')).toHaveCount(17);
+  const directory = page.locator('.place-directory');
+  await page.getByRole('button', { name: 'Gates', exact: true }).click();
+  await expect(directory.locator('button')).toHaveCount(4);
+  await page.getByLabel('Find a campus place').fill('04');
+  await expect(directory.locator('button')).toHaveCount(1);
+  await directory.locator('button').click();
+  await expect(page.getByRole('heading', { name: 'Gate 04', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/building=gate-04/);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Gate 04', exact: true })).toBeVisible();
+  await page.getByLabel('Find a campus place').fill('not-a-campus-place');
+  await expect(directory.locator('button')).toHaveCount(0);
+  await expect(page.locator('.place-directory-empty')).toBeVisible();
 });

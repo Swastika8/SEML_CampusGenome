@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import bcrypt from 'bcryptjs';
 import pool, { isDemo } from '../config/db.js';
+import { applyCampusMap } from './campusMap.js';
 
 export async function bootstrap() {
   await pool.query(await readFile(new URL('./schema.sql', import.meta.url), 'utf8'));
+  await applyCampusMap(pool);
   if (!isDemo) return;
   const existing = await pool.query('SELECT COUNT(*)::int AS count FROM users');
   if (existing.rows[0].count) return;

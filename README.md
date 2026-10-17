@@ -22,6 +22,11 @@ You can browse without an account. To try writes, open **Sign in** and select **
 
 ## What changed
 
+- A daily campus dilemma with one changeable vote per account, real aggregate totals, undo and midnight IST rollover.
+- A private, clearable browser reading trail, separated by account and held until sign-in initialization finishes.
+- Optional library mode that hides feed photos and remembers the reading preference.
+- The supplied campus plan traced into 17 selectable places, including all four gates, searchable by name and filterable by type. Reference data loads on hosted and demo databases while preserving field notes.
+
 - A common-room homepage with post voting rails, author handles, flairs, replies, pocket saves, share links, a composer and contributor karma.
 - Server-filtered channels: Exam survival, After class, Future you, What's happening and Find your people. Buzzing, Fresh and Most helpful sorts use the actual API with pagination.
 - A compact search header, readable paper surfaces, playful pinboard notes and a calmer campus backdrop, with a collapsible icon rail and guided tour.
@@ -86,9 +91,9 @@ For production, set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 
 
 | Command                       | What it checks                                                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `npm test`                    | 14 API integration checks against an isolated in-memory PGlite database                                            |
-| `npm run test:postgres`       | The same 14 checks in a temporary schema on your configured PostgreSQL server; the schema is removed after the run |
-| `npm run test:e2e`            | Fourteen browser scenarios using separate in-memory API and frontend servers                                       |
+| `npm test`                    | 18 API integration checks against an isolated in-memory PGlite database                                            |
+| `npm run test:postgres`       | The same 18 checks in a temporary schema on your configured PostgreSQL server; the schema is removed after the run |
+| `npm run test:e2e`            | Eighteen browser scenarios using separate in-memory API and frontend servers                                       |
 | `npm run lint`                | Frontend lint rules, including React hooks                                                                         |
 | `npm run build`               | Frontend production build                                                                                          |
 | `npm run format:check`        | Source formatting                                                                                                  |
@@ -98,7 +103,7 @@ For production, set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 
 
 Browser tests use Microsoft Edge on Windows. On other platforms, install the Playwright browser with `npx playwright install chromium`. The browser suite covers restored public routes, academic drilldown, demo login/logout, registration, remembered login, publishing, discussion persistence, removal permissions, pocket saves, RSVPs, verification, keyboard search, theme persistence, the icon rail, capsule discovery and real quest progress. Overflow checks cover 320, 390, 768, 1024 and 1440 pixel widths.
 
-At delivery: **14 embedded API checks, 14 native PostgreSQL checks, and 14 browser scenarios passed**. Lint and build passed, and both application dependency audits reported zero known advisories. Native PostgreSQL tests create a unique `cg_test_...` schema and never write to existing campus tables.
+At delivery: **18 embedded API checks, 18 native PostgreSQL checks, and 18 browser scenarios passed**. Lint and build passed, and both application dependency audits reported zero known advisories. Native PostgreSQL tests create a unique `cg_test_...` schema and never write to existing campus tables.
 
 ## API and project layout
 

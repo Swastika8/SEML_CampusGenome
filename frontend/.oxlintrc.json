@@ -7,7 +7,15 @@
       "warn",
       {
         "allowConstantExport": true,
-        "allowExportNames": ["useAuth", "useData", "useTheme", "useContribution", "useToast", "cn"]
+        "allowExportNames": [
+          "useAuth",
+          "useData",
+          "useTheme",
+          "useContribution",
+          "useToast",
+          "useReadingTrail",
+          "cn"
+        ]
       }
     ]
   }
