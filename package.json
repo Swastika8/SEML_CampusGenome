@@ -18,6 +18,7 @@
     "format": "prettier --write \"frontend/src/**/*.{js,jsx,css}\" \"backend/src/**/*.js\" \"backend/test/**/*.js\" \"scripts/*.mjs\" \"*.{json,md}\"",
     "format:check": "prettier --check \"frontend/src/**/*.{js,jsx,css}\" \"backend/src/**/*.js\" \"backend/test/**/*.js\"",
     "test:e2e": "playwright test",
+    "test:ui": "node --test --test-concurrency=1 frontend/tests/*.test.js",
     "test:postgres": "node scripts/test-postgres.mjs",
     "capture": "node scripts/capture.mjs"
   },

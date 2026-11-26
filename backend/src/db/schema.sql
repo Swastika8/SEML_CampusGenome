@@ -175,3 +175,66 @@ CREATE INDEX IF NOT EXISTS idx_nodes_author ON knowledge_nodes(user_id);
 CREATE INDEX IF NOT EXISTS idx_nodes_feed ON knowledge_nodes(category, created_at DESC, id DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users(LOWER(email));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_handle_lower ON users(LOWER(handle));
+
+-- Public student-run forums. The category mapping keeps existing posts and routes intact.
+CREATE TABLE IF NOT EXISTS forum_communities (
+    id SERIAL PRIMARY KEY,
+    slug VARCHAR(40) NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+    name VARCHAR(60) NOT NULL,
+    campus VARCHAR(100) NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    default_category VARCHAR(50) UNIQUE,
+    owner_id INT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO forum_communities (slug,name,campus,description,default_category) VALUES
+    ('campus','The Common Room','PCCOE','Questions, stories, and the things you wish someone told you on day one.','Discussion'),
+    ('exam-survival','Exam Survival','PCCOE','Notes, practical advice, last-minute revision, and small academic victories.','Academics'),
+    ('after-class','After Class','PCCOE','The good chai, quiet corners, and everything that happens after the bell.','Lifestyle'),
+    ('whats-happening','What’s Happening','PCCOE','Workshops, meetups, campus news, and good reasons to leave the hostel.','Events'),
+    ('future-you','Future You','PCCOE','Internships, portfolio advice, placements, and honest next-step questions.','Career'),
+    ('find-your-people','Find Your People','PCCOE','Clubs, projects, hobby groups, and finding someone to go with.','Communities')
+ON CONFLICT (slug) DO NOTHING;
+
+ALTER TABLE knowledge_nodes ADD COLUMN IF NOT EXISTS forum_community_id INT REFERENCES forum_communities(id) ON DELETE SET NULL;
+ALTER TABLE knowledge_nodes ADD COLUMN IF NOT EXISTS post_kind VARCHAR(20);
+ALTER TABLE knowledge_nodes ADD COLUMN IF NOT EXISTS link_url TEXT;
+ALTER TABLE knowledge_nodes ADD COLUMN IF NOT EXISTS forum_image_url TEXT;
+ALTER TABLE knowledge_nodes ADD COLUMN IF NOT EXISTS downvote_count INT NOT NULL DEFAULT 0 CHECK (downvote_count >= 0);
+CREATE INDEX IF NOT EXISTS idx_nodes_forum ON knowledge_nodes(forum_community_id,created_at DESC,id DESC);
+CREATE INDEX IF NOT EXISTS idx_forum_owner ON forum_communities(owner_id);
+
+CREATE TABLE IF NOT EXISTS forum_memberships (
+    community_id INT NOT NULL REFERENCES forum_communities(id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (community_id,user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_forum_memberships_user ON forum_memberships(user_id,community_id);
+
+CREATE TABLE IF NOT EXISTS forum_downvotes (
+    node_id INT NOT NULL REFERENCES knowledge_nodes(id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (node_id,user_id)
+);
+
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_id INT;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS depth SMALLINT NOT NULL DEFAULT 0 CHECK (depth BETWEEN 0 AND 6);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_comments_node_id ON comments(node_id,id);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='comments_parent_same_node' AND conrelid='comments'::regclass) THEN
+        ALTER TABLE comments ADD CONSTRAINT comments_parent_same_node
+            FOREIGN KEY (node_id,parent_id) REFERENCES comments(node_id,id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS forum_reports (
+    node_id INT NOT NULL REFERENCES knowledge_nodes(id) ON DELETE CASCADE,
+    reporter_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason VARCHAR(30) NOT NULL CHECK (reason IN ('spam','harassment','personal-information','misleading','other')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMPTZ,
+    PRIMARY KEY (node_id,reporter_id)
+);
+CREATE INDEX IF NOT EXISTS idx_forum_pending_reports ON forum_reports(node_id,created_at) WHERE resolved_at IS NULL;

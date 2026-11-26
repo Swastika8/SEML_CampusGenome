@@ -23,29 +23,32 @@ Registration accepts `name`, `handle`, `email`, `password`, optional `department
 
 `GET /nodes` supports:
 
-| Query                | Allowed values / default                                    |
-| -------------------- | ----------------------------------------------------------- |
-| `category`           | `Academics`, `Career`, `Communities`, `Events`, `Lifestyle` |
-| `search`             | Up to 150 characters; literal substring matching            |
-| `sort`               | `recent` (default), `trending`, `top_verified`, `oldest`    |
-| `page`               | Positive integer, default 1                                 |
-| `limit`              | Integer 1-100, default 20                                   |
-| `department`, `year` | Optional academic filters                                   |
-| `saved`              | `true` to return the authenticated student's collection     |
+| Query                 | Allowed values / default                                                  |
+| --------------------- | ------------------------------------------------------------------------- |
+| `category`            | `Discussion`, `Academics`, `Career`, `Communities`, `Events`, `Lifestyle` |
+| `search`              | Up to 150 characters; literal substring matching                          |
+| `sort`                | `recent` (default), `hot`, `top`, `trending`, `top_verified`, `oldest`    |
+| `page`                | Positive integer, default 1                                               |
+| `limit`               | Integer 1-100, default 20                                                 |
+| `department`, `year`  | Optional academic filters                                                 |
+| `saved`               | `true` to return the authenticated student's collection                   |
+| `community`, `campus` | Optional community slug and exact university name (case-insensitive)      |
+| `scope`, `window`     | `all` or `following` (requires sign-in); `all`, `week`, or `month`        |
 
-The result includes `data` and `pagination: {total, page, limit, totalPages}`. Each contribution includes author information, category details, actual engagement counts, and personalized `is_saved`, `is_verified_by_me` and `is_attending` fields when authenticated. Removed contributions are excluded.
+The result includes `data` and `pagination: {total, page, limit, totalPages}`. Posts include community details, `forum_post_kind`, net `score`, the viewer's `my_vote` and `has_reported`, and existing save, verify, and RSVP fields. Existing posts without explicit communities appear in their category's starter community. Removed contributions are excluded.
 
 `GET /nodes/:id` returns a single visible contribution. `GET /stats` returns actual campus totals. `GET /health` returns the database mode and readiness; database failures return 503.
 
 ## Contributions and discussion
 
-| Method | Route                     | Behavior                                                                                 |
-| ------ | ------------------------- | ---------------------------------------------------------------------------------------- |
-| POST   | `/nodes`                  | Publish a validated contribution; authenticated; +10 author reputation                   |
-| DELETE | `/nodes/:id`              | Soft-remove; author or moderator/admin; reverse contribution and verification reputation |
-| POST   | `/nodes/:id/verify`       | Toggle verification; authenticated; self-verification rejected; +/-5 author reputation   |
-| GET    | `/nodes/:nodeId/comments` | Read the oldest 200 discussion entries                                                   |
-| POST   | `/nodes/:nodeId/comments` | Post 1-2000 characters; server chooses author; +2 commenter reputation                   |
+| Method | Route                     | Behavior                                                                                                                |
+| ------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/nodes`                  | Publish a validated contribution; authenticated; +10 author reputation                                                  |
+| DELETE | `/nodes/:id`              | Soft-remove by the author, community owner, or site moderator. Reverses contribution and verification reputation.       |
+| POST   | `/nodes/:id/verify`       | Toggle verification; authenticated; self-verification rejected; +/-5 author reputation                                  |
+| PUT    | `/nodes/:id/vote`         | Set `value` to `1`, `-1`, or `0`. Only the latest vote counts.                                                          |
+| GET    | `/nodes/:nodeId/comments` | Read up to 200 entries. Pass `after=<nextCursor>` for the next page.                                                    |
+| POST   | `/nodes/:nodeId/comments` | Post `text` (1–2,000 characters), optionally with `parentId` in the same discussion. Replies are limited to six levels. |
 
 Minimum contribution:
 
@@ -61,6 +64,24 @@ Minimum contribution:
 ```
 
 Titles are limited to 255 characters; descriptions require 15-10,000 characters. Events additionally require an ISO `eventDate` (`YYYY-MM-DD`); optional fields include `eventTime`, `eventLocation`, and `imageUrl`. Career opportunities may include `company`, `companyRole`, `applyLink`, `domain`, `opportunityType`, and `statsOrPackage`. Lifestyle contributions may include `location`, `spotName`, `secret`, `tags`, and `imageUrl`. Communities may include `clubName`, `communityCategory`, and `nextMeeting`. URLs must use HTTP or HTTPS. Images are URL references, not file uploads.
+
+Forum posts accept `communitySlug` and `postKind` (`Discussion`, `Question`, `Guide`, or `Link`). A link post requires `linkUrl`. Posts with an explicit community can include an optional `imageUrl`.
+
+## Communities and moderation
+
+| Method       | Route                                 | Behavior                                                                                                                                |
+| ------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| GET          | `/forum/communities`                  | Public directory with `search`, `campus`, `page`, and `limit`. `joined=true` requires sign-in.                                          |
+| POST         | `/forum/communities`                  | Create a public community with `name`, unique `slug`, `campus`, and `description`. The authenticated creator joins automatically.       |
+| GET          | `/forum/communities/:slug`            | Public details, member and post counts, and the viewer's membership.                                                                    |
+| PUT / DELETE | `/forum/communities/:slug/membership` | Join or leave as the signed-in student. Both operations are idempotent.                                                                 |
+| PUT          | `/nodes/:id/report`                   | Report a post with a predefined `reason`. One report per account per post.                                                              |
+| GET          | `/forum/reports`                      | Pending reports grouped by post. Community owners see their own communities. Site moderators see all. Reporter identities stay private. |
+| POST         | `/forum/reports/:id`                  | Review the reports for post `:id` with `action` set to `dismiss` or `remove`.                                                           |
+
+## Labs exports
+
+`GET /labs/pocket` returns the signed-in account's visible saved posts. `GET /labs/calendar` downloads its visible RSVPs as all-day iCalendar entries and returns the number of skipped dates in `X-Campus-Skipped-Events`. Exports are private and limited to 1,000 entries per request.
 
 ## Private saves and event attendance
 

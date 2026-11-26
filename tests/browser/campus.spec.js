@@ -5,13 +5,16 @@ async function studentSession(page, request) {
   const { token } = await response.json();
   await page.addInitScript((value) => sessionStorage.setItem('campus_token', value), token);
 }
-const hero = (page) => page.getByRole('heading', { name: 'Every college has hidden knowledge.' });
+const hero = (page) => page.getByRole('heading', { name: 'The Common Room.', exact: true });
 
 test('original campus screens and academic drilldown work without errors', async ({ page }) => {
+  test.setTimeout(60000);
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   for (const route of [
     '/',
+    '/commons',
+    '/clubs',
     '/academics',
     '/career',
     '/communities',
@@ -20,7 +23,7 @@ test('original campus screens and academic drilldown work without errors', async
     '/map',
     '/explore',
   ]) {
-    await page.goto(route);
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#main-content')).toBeVisible();
     await expect(page.getByText("Let's find our way back.")).toHaveCount(0);
     if (route === '/') await expect(hero(page)).toBeVisible();
@@ -29,13 +32,13 @@ test('original campus screens and academic drilldown work without errors', async
         page.getByRole('heading', { name: 'Midnight Maggi & Cutting Chai' }),
       ).toBeVisible();
   }
-  await page.goto('/academics');
+  await page.goto('/academics', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'Explore IT academics' }).click();
   await page.getByRole('button', { name: 'Explore SY guides' }).click();
   await expect(
     page.getByRole('heading', { name: 'IT - SY Insights: Data Structures & Algorithms' }),
   ).toBeVisible();
-  await page.goto('/');
+  await page.goto('/commons', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'Take a campus tour' }).click();
   await expect(page.getByText('Start your journey here.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Skip', exact: true }).click();
@@ -55,10 +58,11 @@ test('original sign-in design creates a real demo session and signs out', async 
   await page.goto('/login');
   await page.getByRole('button', { name: 'Try the student demo' }).click();
   await expect(hero(page)).toBeVisible();
-  await expect(page.locator('aside').getByText('John Doe', { exact: true })).toBeVisible();
+  await page.getByLabel('Open account menu').click();
+  await expect(page.getByText('John Doe', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => !!sessionStorage.getItem('campus_token'))).toBe(true);
   expect(await page.evaluate(() => localStorage.getItem('campus_token'))).toBeNull();
-  await page.locator('aside button[title="Log Out"]').click();
+  await page.getByRole('button', { name: 'Log out', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
 
@@ -67,7 +71,7 @@ test('gold contribution flow publishes, discusses and removes a real strand', as
   request,
 }) => {
   await studentSession(page, request);
-  await page.goto('/');
+  await page.goto('/commons');
   await page
     .locator('header')
     .getByRole('button', { name: /Contribute/ })
@@ -90,7 +94,7 @@ test('gold contribution flow publishes, discusses and removes a real strand', as
   await expect(page.locator('.comments-list')).toContainText('Explain why each join');
   await page.getByRole('button', { name: 'Remove', exact: true }).click();
   await page.getByRole('button', { name: 'Remove contribution', exact: true }).click();
-  await expect(page).toHaveURL(/\/explore$/);
+  await expect(page).toHaveURL(/\/c\/exam-survival$/);
   expect((await request.get('/api/nodes/' + id)).status()).toBe(404);
 });
 
@@ -105,9 +109,9 @@ test('pocketed finds survive reload and remain in the private pocket', async ({
   await page.reload();
   await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeVisible();
   await page.goto('/saved');
-  await expect(page.locator('.node-card')).toContainText('Mountaineering Expedition Group');
+  await expect(page.locator('.forum-post')).toContainText('Mountaineering Expedition Group');
   await page.getByRole('button', { name: /Unsave Mountaineering/ }).click();
-  await expect(page.locator('.node-card')).toHaveCount(0);
+  await expect(page.locator('.forum-post')).toHaveCount(0);
 });
 
 test('event RSVPs and peer verifications reflect the server', async ({ page, request }) => {
@@ -119,29 +123,29 @@ test('event RSVPs and peer verifications reflect the server', async ({ page, req
   await expect(page.locator('.rsvp-box')).toContainText('1 student has RSVPed');
   await page.getByRole('button', { name: 'Cancel RSVP' }).click();
   await expect(page.getByRole('button', { name: 'Count me in' })).toBeVisible();
-  await page.getByRole('button', { name: /^Verified/ }).click();
-  await expect(page.getByRole('button', { name: /^Verify ·/ })).toBeVisible();
-  await page.getByRole('button', { name: /^Verify ·/ }).click();
-  await expect(page.getByRole('button', { name: /^Verified/ })).toBeVisible();
+  const vote = page.getByRole('button', { name: 'Upvote', exact: true });
+  await expect(vote).toHaveAttribute('aria-pressed', 'true');
+  await vote.click();
+  await expect(vote).toHaveAttribute('aria-pressed', 'false');
+  await vote.click();
+  await expect(vote).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('the original floating search supports the keyboard shortcut and real results', async ({
-  page,
-}) => {
+test('forum search supports the keyboard shortcut and real results', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Control+k');
-  const search = page.getByRole('textbox', { name: 'Search campus knowledge' });
+  const search = page.getByRole('searchbox', { name: 'Search campus knowledge' });
   await expect(search).toBeFocused();
   await search.fill('Maggi');
   await page
-    .locator('.header-search')
+    .locator('.forum-search-results')
     .getByText('Midnight Maggi & Cutting Chai', { exact: true })
     .click();
   await expect(page.locator('.article h1')).toHaveText('Midnight Maggi & Cutting Chai');
   await page.keyboard.press('Control+k');
   await search.fill('Maggi');
   await page.keyboard.press('Escape');
-  await expect(page.getByText('Campus Search Results')).toHaveCount(0);
+  await expect(page.locator('.forum-search-results')).toHaveCount(0);
 });
 
 test('original registration form and remembered sign-in work', async ({ page }) => {
@@ -151,24 +155,35 @@ test('original registration form and remembered sign-in work', async ({ page }) 
   await page.getByLabel('Choose a handle').fill('browser_student');
   await page.getByLabel('Campus email').fill('browser@campus.edu');
   await page.getByLabel('Password', { exact: true }).fill('browserPassword123');
+  const registration = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/auth/register') && response.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Create Student Account' }).click();
+  expect((await registration).status()).toBe(201);
   await expect(hero(page)).toBeVisible();
-  await expect(page.locator('aside').getByText('Browser Student', { exact: true })).toBeVisible();
-  await page.locator('aside button[title="Log Out"]').click();
+  await page.getByLabel('Open account menu').click();
+  await expect(page.getByText('Browser Student', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Log out', exact: true }).click();
   await page.getByLabel('Email or campus handle').fill('browser@campus.edu');
   await page.getByLabel('Password', { exact: true }).fill('browserPassword123');
   await page.getByLabel('Remember this device').check();
+  const login = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/auth/login') && response.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Sign In to CampusGenome' }).click();
+  expect((await login).status()).toBe(200);
   await expect(hero(page)).toBeVisible();
   expect(await page.evaluate(() => !!localStorage.getItem('campus_token'))).toBe(true);
 });
 
-test('original icon rail and restored layouts fit mobile through desktop', async ({ page }) => {
+test('forum and campus tools fit mobile through desktop', async ({ page }) => {
   test.setTimeout(60000);
   for (const width of [320, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['/', '/explore', '/map', '/login']) {
-      await page.goto(route);
+      await page.goto(route, { waitUntil: 'domcontentloaded' });
       await expect(page.locator('h1:visible').first()).toBeVisible();
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
@@ -178,9 +193,8 @@ test('original icon rail and restored layouts fit mobile through desktop', async
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Expand navigation' }).click();
-  await page.getByRole('link', { name: 'My Pocket', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Your pocket universe.' })).toBeVisible();
+  await page.getByRole('link', { name: 'Saved posts', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Saved posts', exact: true })).toBeVisible();
 });
 
 test('midnight preference persists and guests sign in before saving', async ({ page }) => {
@@ -197,7 +211,7 @@ test('midnight preference persists and guests sign in before saving', async ({ p
 test('the daily capsule reveals real finds and shuffles to a different strand', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/commons');
   await page.getByRole('button', { name: "Crack today's capsule" }).click();
   const reveal = page.locator('.capsule-reveal');
   await expect(reveal).toBeVisible();
@@ -211,7 +225,7 @@ test('the daily capsule reveals real finds and shuffles to a different strand', 
 
 test('side quests advance only after an actual pocket save', async ({ page, request }) => {
   await studentSession(page, request);
-  await page.goto('/');
+  await page.goto('/commons');
   const progress = page.getByRole('progressbar', { name: 'Completed campus side quests' });
   await expect(progress).toHaveAttribute('aria-valuenow', '1');
   await page.getByRole('button', { name: "Crack today's capsule" }).click();
@@ -230,7 +244,7 @@ test('the original gold discussion modal saves comments through the API', async 
   request,
 }) => {
   await studentSession(page, request);
-  await page.goto('/communities');
+  await page.goto('/clubs');
   const card = page
     .getByRole('heading', { name: 'Mountaineering Expedition Group' })
     .locator('..')
@@ -251,7 +265,7 @@ test('common room channels sort real posts and helpful votes persist', async ({
   request,
 }) => {
   await studentSession(page, request);
-  await page.goto('/');
+  await page.goto('/commons');
   const feed = page.getByRole('region', { name: 'Campus conversation feed' });
   await feed.getByRole('button', { name: 'After class', exact: true }).click();
   await expect(feed.locator('.thread-list')).toHaveAttribute('aria-busy', 'false');
@@ -322,7 +336,7 @@ test('daily campus dilemma remembers one changeable vote and supports undo', asy
   request,
 }) => {
   await studentSession(page, request);
-  await page.goto('/');
+  await page.goto('/commons');
   const poll = page.getByRole('region', { name: 'Daily campus dilemma' });
   const options = poll.locator('.pulse-options button');
   await expect(options).toHaveCount(4);
@@ -346,20 +360,20 @@ test('reading trail persists locally, stays separate from guests and clears', as
   await studentSession(page, request);
   await page.goto('/nodes/22');
   await expect(page.locator('.article h1')).toHaveText('Mountaineering Expedition Group');
-  await page.goto('/');
+  await page.goto('/commons');
   const trail = page.getByRole('region', { name: 'Recent rabbit holes' });
   await expect(trail).toContainText('Mountaineering Expedition Group');
   await page.reload();
   await expect(trail).toContainText('Mountaineering Expedition Group');
   const guest = await page.context().newPage();
-  await guest.goto('/');
+  await guest.goto('/commons');
   await expect(guest.getByRole('region', { name: 'Recent rabbit holes' })).not.toContainText(
     'Mountaineering Expedition Group',
   );
   await guest.close();
   await page.goto('/nodes/9');
   await expect(page.locator('.article h1')).toHaveText('The Botanical Quad');
-  await page.goto('/');
+  await page.goto('/commons');
   await expect(trail.locator('.reading-trail-list a').first()).toContainText('The Botanical Quad');
   await trail.getByRole('button', { name: 'Clear reading trail' }).click();
   await page.reload();
@@ -369,7 +383,7 @@ test('reading trail persists locally, stays separate from guests and clears', as
 test('library mode hides post images and remembers the quiet reading preference', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/commons');
   const feed = page.getByRole('region', { name: 'Campus conversation feed' });
   await expect(feed.locator('.thread-thumb').first()).toBeVisible();
   await feed.getByRole('button', { name: 'Library mode', exact: true }).click();

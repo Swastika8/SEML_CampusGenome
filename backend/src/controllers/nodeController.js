@@ -1,16 +1,31 @@
 import pool, { transaction } from '../config/db.js';
+import {
+  forumCommunityJoins,
+  forumError,
+  isSiteModerator,
+  lockVisiblePost,
+  voteScore,
+} from '../lib/forumData.js';
 
 export const nodeSelect = `SELECT k.*, u.name AS author_name, u.handle AS author_handle, u.rank AS author_rank,
   to_jsonb(ev.*) AS event_details, to_jsonb(ls.*) AS lifestyle_details, to_jsonb(cr.*) AS career_details,
   to_jsonb(ac.*) AS academic_details, to_jsonb(cm.*) AS community_details,
   EXISTS(SELECT 1 FROM verifications v WHERE v.node_id=k.id AND v.user_id=$1) AS is_verified_by_me,
   EXISTS(SELECT 1 FROM bookmarks b WHERE b.node_id=k.id AND b.user_id=$1) AS is_saved,
+  EXISTS(SELECT 1 FROM forum_reports r WHERE r.node_id=k.id AND r.reporter_id=$1) AS has_reported,
   EXISTS(SELECT 1 FROM event_attendees a WHERE a.node_id=k.id AND a.user_id=$1) AS is_attending,
-  (SELECT COUNT(*)::int FROM event_attendees a WHERE a.node_id=k.id) AS attendee_count
+  (SELECT COUNT(*)::int FROM event_attendees a WHERE a.node_id=k.id) AS attendee_count,
+  fc.slug AS community_slug,fc.name AS community_name,fc.campus AS community_campus,
+  fc.owner_id AS community_owner_id,fc.default_category AS community_category,
+  COALESCE(k.post_kind,CASE k.category WHEN 'Academics' THEN 'Guide' WHEN 'Events' THEN 'Event' ELSE 'Discussion' END) AS forum_post_kind,
+  ${voteScore} AS score,
+  CASE WHEN EXISTS(SELECT 1 FROM verifications v WHERE v.node_id=k.id AND v.user_id=$1) THEN 1
+       WHEN EXISTS(SELECT 1 FROM forum_downvotes d WHERE d.node_id=k.id AND d.user_id=$1) THEN -1 ELSE 0 END AS my_vote
   FROM knowledge_nodes k LEFT JOIN users u ON u.id=k.user_id
   LEFT JOIN event_nodes ev ON ev.node_id=k.id LEFT JOIN lifestyle_nodes ls ON ls.node_id=k.id
   LEFT JOIN career_nodes cr ON cr.node_id=k.id LEFT JOIN academic_nodes ac ON ac.node_id=k.id
-  LEFT JOIN community_nodes cm ON cm.node_id=k.id`;
+  LEFT JOIN community_nodes cm ON cm.node_id=k.id
+  ${forumCommunityJoins}`;
 export const updateRank = (client, userId) =>
   client.query(
     `UPDATE users SET rank=CASE WHEN reputation_score>=250 THEN 'Nucleus' WHEN reputation_score>=100 THEN 'Chromosome' ELSE 'Helix' END WHERE id=$1`,
@@ -19,9 +34,27 @@ export const updateRank = (client, userId) =>
 
 export const getAllNodes = async (req, res, next) => {
   try {
-    const { category, search, sort, page, limit, saved, status, department, year } = req.query;
+    const {
+      category,
+      search,
+      sort,
+      page,
+      limit,
+      saved,
+      status,
+      department,
+      year,
+      scope,
+      community,
+      campus,
+      window,
+    } = req.query;
     if (saved === 'true' && !req.user)
       return res.status(401).json({ success: false, message: 'Sign in to see your saved items.' });
+    if (scope === 'following' && !req.user)
+      return res
+        .status(401)
+        .json({ success: false, message: 'Sign in to see your joined communities.' });
     const params = [req.user?.id || null];
     const conditions = ["k.status != 'Removed'"];
     const add = (clause, value) => {
@@ -32,6 +65,14 @@ export const getAllNodes = async (req, res, next) => {
     if (department) add('ac.department = ?', department);
     if (year) add('ac.year = ?', year);
     if (status) add('k.status = ?', status);
+    if (community) add('fc.slug = ?', community);
+    if (campus) add('LOWER(fc.campus) = LOWER(?)', campus);
+    if (scope === 'following')
+      conditions.push(
+        'EXISTS(SELECT 1 FROM forum_memberships m WHERE m.community_id=fc.id AND m.user_id=$1)',
+      );
+    if (window !== 'all')
+      add("k.created_at >= NOW() - (?::int * INTERVAL '1 day')", window === 'week' ? 7 : 30);
     if (search) {
       params.push('%' + search.replace(/[\\%_]/g, '\\$&') + '%');
       conditions.push(
@@ -46,6 +87,8 @@ export const getAllNodes = async (req, res, next) => {
       oldest: 'k.created_at ASC,k.id ASC',
       trending: '(k.verification_count*2+k.comment_count) DESC,k.id DESC',
       top_verified: 'k.verification_count DESC,k.id DESC',
+      hot: `((${voteScore}*3+COALESCE(k.comment_count,0))/POWER(1+GREATEST(0,EXTRACT(EPOCH FROM (NOW()-k.created_at)))/86400,1.3)) DESC,k.created_at DESC,k.id DESC`,
+      top: `${voteScore} DESC,k.created_at DESC,k.id DESC`,
     };
     // Count uses the same joins and parameters, including the personalization parameter.
     const all = nodeSelect + where;
@@ -95,9 +138,28 @@ export const createNode = async (req, res, next) => {
   try {
     const data = await transaction(async (client) => {
       const b = req.body;
+      const {
+        rows: [community],
+      } = await client.query(
+        b.communitySlug
+          ? 'SELECT id FROM forum_communities WHERE slug=$1'
+          : 'SELECT id FROM forum_communities WHERE default_category=$1',
+        [b.communitySlug || b.category],
+      );
+      if (!community) throw forumError(404, 'Community not found.');
       const inserted = await client.query(
-        'INSERT INTO knowledge_nodes (user_id,category,title,description) VALUES ($1,$2,$3,$4) RETURNING *',
-        [req.user.id, b.category, b.title, b.description],
+        `INSERT INTO knowledge_nodes (user_id,category,title,description,forum_community_id,post_kind,link_url,forum_image_url)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+        [
+          req.user.id,
+          b.category,
+          b.title,
+          b.description,
+          community.id,
+          b.postKind || null,
+          b.postKind === 'Link' ? b.linkUrl : null,
+          b.communitySlug ? b.imageUrl || null : null,
+        ],
       );
       const node = inserted.rows[0],
         id = node.id;
@@ -176,28 +238,35 @@ export const createNode = async (req, res, next) => {
     next(err);
   }
 };
+export async function removePost(client, post) {
+  await client.query("UPDATE knowledge_nodes SET status='Removed',updated_at=NOW() WHERE id=$1", [
+    post.id,
+  ]);
+  await client.query(
+    'UPDATE forum_reports SET resolved_at=NOW() WHERE node_id=$1 AND resolved_at IS NULL',
+    [post.id],
+  );
+  await client.query(
+    'UPDATE users SET reputation_score=GREATEST(0,reputation_score-$1) WHERE id=$2',
+    [10 + (post.verification_count || 0) * 5, post.user_id],
+  );
+  await updateRank(client, post.user_id);
+}
+
 export const deleteNode = async (req, res, next) => {
   try {
     await transaction(async (client) => {
-      const found = await client.query(
-        "SELECT user_id,verification_count FROM knowledge_nodes WHERE id=$1 AND status!='Removed' FOR UPDATE",
-        [req.params.id],
-      );
-      if (!found.rows.length)
-        throw Object.assign(new Error('Contribution not found.'), { status: 404 });
-      if (found.rows[0].user_id !== req.user.id && !['admin', 'moderator'].includes(req.user.role))
-        throw Object.assign(new Error('You can only remove your own contributions.'), {
-          status: 403,
-        });
-      await client.query(
-        "UPDATE knowledge_nodes SET status='Removed', updated_at=NOW() WHERE id=$1",
-        [req.params.id],
-      );
-      await client.query(
-        'UPDATE users SET reputation_score=GREATEST(0,reputation_score-$1) WHERE id=$2',
-        [10 + found.rows[0].verification_count * 5, found.rows[0].user_id],
-      );
-      await updateRank(client, found.rows[0].user_id);
+      const post = await lockVisiblePost(client, req.params.id);
+      if (
+        post.user_id !== req.user.id &&
+        post.community_owner_id !== req.user.id &&
+        !isSiteModerator(req.user)
+      )
+        throw forumError(
+          403,
+          'Only the author or a moderator for this community can remove this post.',
+        );
+      await removePost(client, post);
     });
     res.json({ success: true, message: 'Contribution removed.' });
   } catch (err) {

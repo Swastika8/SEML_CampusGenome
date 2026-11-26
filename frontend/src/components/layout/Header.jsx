@@ -32,6 +32,7 @@ export default function Header() {
   const getPageTitle = (path) => {
     switch (path) {
       case '/':
+      case '/commons':
         return 'The common room';
       case '/map':
         return 'Campus field guide';
@@ -39,7 +40,7 @@ export default function Header() {
         return 'Academics Repository';
       case '/career':
         return 'Career Connections';
-      case '/communities':
+      case '/clubs':
         return 'Campus Communities';
       case '/events':
         return 'Events & News';
@@ -47,6 +48,8 @@ export default function Header() {
         return 'Lifestyle & Recreation';
       case '/profile':
         return 'User Profile';
+      case '/labs':
+        return 'Campus Labs';
       case '/saved':
         return 'Your pocket';
       case '/explore':

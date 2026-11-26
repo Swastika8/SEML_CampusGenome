@@ -442,3 +442,192 @@ test('poll validation rejects stale dates and invalid choices without changing t
   assert.equal((await request('/pulse', { auth: otherToken })).body.data.myVote, null);
   await request('/pulse/vote', { method: 'DELETE', body: { pollDate } });
 });
+
+const forumInput = {
+  slug: 'campus-robotics-lab',
+  name: 'Robotics Lab',
+  campus: 'Test University',
+  description: 'A place for students who build robots and share what they learn.',
+};
+const forumPostInput = {
+  category: 'Discussion',
+  communitySlug: forumInput.slug,
+  title: 'What is your first robotics project?',
+  description: 'A discussion about friendly robotics projects for first years.',
+  postKind: 'Question',
+};
+
+test('communities preserve legacy posts and support public university search and private membership', async () => {
+  const legacy = await request('/nodes?community=exam-survival', { auth: null });
+  assert.ok(legacy.body.data.some((post) => post.id === 18));
+  assert.equal(
+    (await request('/forum/communities', { method: 'POST', auth: null, body: forumInput })).status,
+    401,
+  );
+  const owner = await request('/forum/communities', {
+    method: 'POST',
+    body: { ...forumInput, owner_id: 999 },
+  });
+  assert.equal(owner.status, 201);
+  assert.equal(owner.body.data.is_owner, true);
+  assert.equal(owner.body.data.is_joined, true);
+  assert.equal(owner.body.data.member_count, 1);
+  assert.equal(
+    (await request('/forum/communities', { method: 'POST', body: forumInput })).status,
+    409,
+  );
+  const found = await request('/forum/communities?campus=test+university&search=robotics', {
+    auth: null,
+  });
+  assert.deepEqual(
+    found.body.data.map((group) => group.slug),
+    [forumInput.slug],
+  );
+  assert.equal(found.body.data[0].is_joined, false);
+  assert.match(found.headers.get('cache-control'), /no-store/);
+  assert.equal((await request('/nodes?scope=following', { auth: null })).status, 401);
+  const publication = await request('/nodes', { method: 'POST', body: forumPostInput });
+  assert.equal(publication.status, 201);
+  const id = publication.body.data.id;
+  const membership = '/forum/communities/' + forumInput.slug + '/membership';
+  assert.equal((await request(membership, { method: 'PUT', auth: null })).status, 401);
+  assert.deepEqual((await request('/nodes?scope=following', { auth: otherToken })).body.data, []);
+  for (let i = 0; i < 2; i++) {
+    const joined = await request(membership, { method: 'PUT', auth: otherToken });
+    assert.equal(joined.body.data.is_joined, true);
+    assert.equal(joined.body.data.member_count, 2);
+  }
+  const following = await request('/nodes?scope=following&sort=hot&campus=TEST+UNIVERSITY', {
+    auth: otherToken,
+  });
+  assert.deepEqual(
+    following.body.data.map((post) => post.id),
+    [id],
+  );
+  assert.equal(following.body.data[0].forum_post_kind, 'Question');
+  assert.equal(
+    (await request(membership, { method: 'DELETE', auth: otherToken })).body.data.is_joined,
+    false,
+  );
+  assert.deepEqual((await request('/nodes?scope=following', { auth: otherToken })).body.data, []);
+  assert.equal(
+    (await request('/nodes', { method: 'POST', body: { ...forumPostInput, postKind: 'Link' } }))
+      .status,
+    400,
+  );
+  const link = await request('/nodes', {
+    method: 'POST',
+    body: { ...forumPostInput, postKind: 'Link', linkUrl: 'https://example.test/guide' },
+  });
+  assert.equal(link.status, 201);
+  assert.equal(
+    (await request('/nodes/' + link.body.data.id)).body.data.link_url,
+    'https://example.test/guide',
+  );
+});
+
+test('forum votes are idempotent, private, switch directions, and share existing verification totals', async () => {
+  const post = (await request('/nodes', { method: 'POST', body: forumPostInput })).body.data;
+  const vote = (value, auth = otherToken) =>
+    request('/nodes/' + post.id + '/vote', { method: 'PUT', auth, body: { value } });
+  assert.equal((await vote(1, token)).status, 403);
+  assert.equal((await vote(1, null)).status, 401);
+  assert.equal((await vote(2)).status, 400);
+  const repeated = await Promise.all([vote(1), vote(1)]);
+  assert.ok(
+    repeated.every((result) => result.body.data.score === 1 && result.body.data.value === 1),
+  );
+  assert.equal((await vote(-1)).body.data.score, -1);
+  assert.equal((await vote(-1)).body.data.score, -1);
+  const mine = (await request('/nodes/' + post.id, { auth: otherToken })).body.data;
+  assert.equal(mine.my_vote, -1);
+  assert.equal(mine.is_verified_by_me, false);
+  assert.equal((await request('/nodes/' + post.id, { auth: null })).body.data.my_vote, 0);
+  const verified = await request('/nodes/' + post.id + '/verify', {
+    method: 'POST',
+    auth: otherToken,
+  });
+  assert.deepEqual(verified.body.data, { isVerified: true, verificationCount: 1 });
+  const top = await request('/nodes?community=' + forumInput.slug + '&sort=top&window=week', {
+    auth: null,
+  });
+  assert.equal(top.body.data[0].id, post.id);
+  assert.equal((await vote(0)).body.data.score, 0);
+});
+
+test('discussion threads retain parents across cursor pages and reject replies in other posts', async () => {
+  const post = (await request('/nodes', { method: 'POST', body: forumPostInput })).body.data;
+  const comments = '/nodes/' + post.id + '/comments';
+  const add = (body) => request(comments, { method: 'POST', body, auth: otherToken });
+  const root = (await add({ text: 'A top-level observation.' })).body.data;
+  const child = (await add({ text: 'Reply to the original observation.', parentId: root.id })).body
+    .data;
+  assert.equal(child.parent_id, root.id);
+  assert.equal(child.depth, 1);
+  assert.equal(
+    (
+      await request('/nodes/1/comments', {
+        method: 'POST',
+        body: { text: 'Reply in another thread.', parentId: root.id },
+      })
+    ).status,
+    400,
+  );
+  const page = await request(comments + '?limit=1', { auth: null });
+  assert.equal(page.body.nextCursor, root.id);
+  assert.deepEqual(
+    page.body.data.map((comment) => comment.id),
+    [root.id],
+  );
+  const continuation = await request(comments + '?limit=1&after=' + page.body.nextCursor, {
+    auth: null,
+  });
+  assert.equal(continuation.body.data[0].parent_id, root.id);
+  assert.equal(continuation.body.nextCursor, null);
+});
+
+test('reports are visible only to the right moderator and resolve without exposing reporter identities', async () => {
+  const group = { ...forumInput, slug: 'another-robotics-group' };
+  assert.equal(
+    (await request('/forum/communities', { method: 'POST', auth: otherToken, body: group })).status,
+    201,
+  );
+  const publication = await request('/nodes', {
+    method: 'POST',
+    auth: otherToken,
+    body: forumPostInput,
+  });
+  assert.equal(publication.status, 201);
+  const id = publication.body.data.id;
+  const report = '/nodes/' + id + '/report';
+  assert.equal(
+    (await request(report, { method: 'PUT', auth: null, body: { reason: 'spam' } })).status,
+    401,
+  );
+  for (let i = 0; i < 2; i++)
+    assert.equal((await request(report, { method: 'PUT', body: { reason: 'spam' } })).status, 200);
+  assert.equal((await request('/nodes/' + id)).body.data.has_reported, true);
+  assert.equal((await request('/nodes/' + id, { auth: null })).body.data.has_reported, false);
+  assert.equal((await request('/nodes/' + id, { auth: otherToken })).body.data.has_reported, false);
+  const queue = await request('/forum/reports');
+  assert.equal(queue.status, 200);
+  assert.equal(queue.body.data.find((entry) => entry.id === id).report_count, 1);
+  assert.ok(!Object.hasOwn(queue.body.data[0], 'reporter_id'));
+  assert.deepEqual((await request('/forum/reports', { auth: otherToken })).body.data, []);
+  assert.equal(
+    (
+      await request('/forum/reports/' + id, {
+        method: 'POST',
+        auth: otherToken,
+        body: { action: 'remove' },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (await request('/forum/reports/' + id, { method: 'POST', body: { action: 'remove' } })).status,
+    200,
+  );
+  assert.equal((await request('/nodes/' + id, { auth: null })).status, 404);
+  assert.deepEqual((await request('/forum/reports')).body.data, []);
+});

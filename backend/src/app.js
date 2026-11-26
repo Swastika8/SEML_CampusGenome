@@ -16,6 +16,8 @@ import buildingRoutes from './routes/buildingRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import pulseRoutes from './routes/pulseRoutes.js';
+import labsRoutes, { privateExportResponse } from './routes/labsRoutes.js';
+import forumRoutes from './routes/forumRoutes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -30,6 +32,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Request-ID', req.id);
   next();
 });
+app.use('/api/labs', privateExportResponse);
 app.use(helmet());
 const origins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
   .split(',')
@@ -96,6 +99,7 @@ app.get('/api/stats', async (req, res, next) => {
 for (const [name, router] of Object.entries({
   auth: authRoutes,
   nodes: nodeRoutes,
+  forum: forumRoutes,
   events: eventRoutes,
   lifestyle: lifestyleRoutes,
   career: careerRoutes,
@@ -105,6 +109,7 @@ for (const [name, router] of Object.entries({
   courses: courseRoutes,
   users: userRoutes,
   pulse: pulseRoutes,
+  labs: labsRoutes,
 }))
   app.use('/api/' + name, router);
 app.use(notFoundHandler);

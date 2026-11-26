@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 const ReadingTrailContext = createContext(null);
 function readTrail(key) {
@@ -26,7 +26,7 @@ export function ReadingTrailProvider({ children }) {
   const key = 'campus_reading_trail_' + (user?.id || 'guest');
   const [records, setRecords] = useState({});
   const entries = ready ? records[key] || readTrail(key) : [];
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!Object.hasOwn(records, key)) return;
     try {
       localStorage.setItem(key, JSON.stringify(records[key]));

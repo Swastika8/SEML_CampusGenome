@@ -1,5 +1,11 @@
 import { BookOpen, Briefcase, Users, CalendarDays, Coffee } from 'lucide-react';
 export const channelMeta = {
+  Discussion: {
+    slug: 'campus',
+    mark: '✦',
+    flair: 'Campus discussion',
+    feedLabel: 'The Common Room',
+  },
   Academics: {
     slug: 'exam-survival',
     mark: 'A+',
@@ -32,6 +38,12 @@ export const channelMeta = {
   },
 };
 export const categoryMeta = {
+  Discussion: {
+    icon: Users,
+    label: 'Discussion',
+    description: 'Questions and conversations from across campus.',
+    color: 'orange',
+  },
   Academics: {
     icon: BookOpen,
     label: 'Academics',
@@ -85,6 +97,7 @@ export function eventDate(value) {
 }
 export function nodeImage(node) {
   return (
+    node.forum_image_url ||
     node.event_details?.image_url ||
     node.lifestyle_details?.image_url ||
     node.career_details?.image_url ||

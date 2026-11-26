@@ -15,6 +15,9 @@ import { useContribution } from '../../context/ContributionContext';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
+import { emptyContributionForm } from '../../lib/draftRescue';
+import { useDraftRescue } from '../../hooks/useDraftRescue';
+import { channelMeta } from '../../lib/content';
 const categories = [
   ['Academics', BookOpen],
   ['Career', Briefcase],
@@ -24,48 +27,88 @@ const categories = [
 ];
 export default function ContributionModal() {
   const { isWizardOpen, closeWizard, wizardTarget } = useContribution();
+  const { user, loading } = useAuth();
+  const resolvedAccountId = loading ? null : (user?.id ?? null);
   return isWizardOpen ? (
     <ContributionForm
-      key={wizardTarget?.type || 'new'}
+      key={`${resolvedAccountId ?? 'guest'}:${wizardTarget?.communitySlug || wizardTarget?.type || 'new'}`}
+      accountId={resolvedAccountId}
       initialCategory={wizardTarget?.type}
+      target={wizardTarget}
       onClose={closeWizard}
     />
   ) : null;
 }
-function ContributionForm({ initialCategory, onClose }) {
+function ContributionForm({ initialCategory, accountId, target, onClose }) {
   const { user, refreshUser } = useAuth();
   const { refreshData } = useData();
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    category: initialCategory || 'Academics',
-    title: '',
-    description: '',
-    department: '',
-    year: '',
-    subject: '',
-    eventDate: '',
-    eventTime: '',
-    eventLocation: '',
-    location: '',
-    company: '',
-    companyRole: '',
-    applyLink: '',
-    imageUrl: '',
-    nextMeeting: '',
+  const rescue = useDraftRescue(accountId);
+  const blankForm = () => ({
+    ...emptyContributionForm(initialCategory),
+    communitySlug: target?.communitySlug || '',
+    postKind: target?.kind || '',
   });
+  const [form, setForm] = useState(blankForm);
+  const [draftChoice, setDraftChoice] = useState(() => (rescue.draft ? 'pending' : 'ready'));
+  const [draftMessage, setDraftMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [fields, setFields] = useState({});
   const [success, setSuccess] = useState(null);
-  const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const [newerDraftWaiting, setNewerDraftWaiting] = useState(false);
+  const [draftCleanupFailed, setDraftCleanupFailed] = useState(false);
+  const forumPost = !!(target?.forum || form.communitySlug);
+  const groups = target?.communities || [];
+  const draftPending = rescue.enabled && draftChoice === 'pending' && rescue.hasDraft;
+  const draftEditingBlocked = draftPending || (rescue.enabled && busy);
+  function changeForm(next) {
+    if (draftEditingBlocked) return;
+    setForm(next);
+    if (rescue.enabled && rescue.save(next)) setDraftMessage('Draft kept on this device.');
+  }
+  const update = (e) => changeForm({ ...form, [e.target.name]: e.target.value });
+  function restoreDraft() {
+    if (!rescue.draft) return;
+    const restored = { ...rescue.draft.form };
+    if (target?.forum && !restored.communitySlug) {
+      const fallback = channelMeta[restored.category]?.slug;
+      restored.communitySlug =
+        restored.category === 'Events' ? 'whats-happening' : fallback || 'campus';
+    }
+    setForm(restored);
+    setDraftChoice('restored');
+    setDraftMessage('Draft restored. Changes stay on this device.');
+  }
+  function discardDraft() {
+    if (!rescue.clear()) return;
+    setForm(blankForm());
+    setDraftChoice('ready');
+    setDraftMessage('');
+    setError('');
+    setFields({});
+  }
   async function submit(e) {
     e.preventDefault();
+    if (draftPending || busy) return;
     setBusy(true);
     setError('');
     setFields({});
     try {
-      const body = Object.fromEntries(Object.entries(form).filter(([, v]) => v.trim() !== ''));
+      const body = Object.fromEntries(
+        Object.entries(form).filter(
+          ([key, value]) => value.trim() && (key !== 'linkUrl' || form.postKind === 'Link'),
+        ),
+      );
+      const submittedDraft = rescue.draft;
       const data = await api('/nodes', { method: 'POST', body });
+      // Publication has succeeded even if a later feed/profile refresh fails.
+      // Clear now, so a refresh error cannot resurrect an already published draft.
+      if (rescue.enabled) {
+        const cleanup = rescue.clearIfUnchanged(submittedDraft);
+        setNewerDraftWaiting(cleanup === 'changed');
+        setDraftCleanupFailed(cleanup === 'failed');
+      }
       setSuccess(data.data);
       await Promise.all([refreshData(), refreshUser()]);
     } catch (err) {
@@ -84,13 +127,15 @@ function ContributionForm({ initialCategory, onClose }) {
         </span>
         <input
           name={name}
-          value={form[name]}
+          value={form[name] || ''}
           type={type}
           required={required}
+          disabled={draftEditingBlocked}
           onChange={update}
           placeholder={placeholder}
           maxLength={type === 'url' ? 2048 : 255}
           aria-invalid={!!fields[name]}
+          autoFocus={name === 'imageUrl' && !!target?.image && !draftPending}
         />
         {fields[name] && <small className="field-error">{fields[name].join(' ')}</small>}
       </label>
@@ -98,9 +143,16 @@ function ContributionForm({ initialCategory, onClose }) {
   }
   return (
     <Modal
-      title={success ? 'A little knowledge, passed on.' : 'What do you know?'}
+      title={
+        success
+          ? 'A little knowledge, passed on.'
+          : forumPost
+            ? 'Create a post'
+            : 'What do you know?'
+      }
       onClose={busy ? () => {} : onClose}
       wide
+      className={forumPost ? 'forum-dialog' : ''}
     >
       {!user ? (
         <div className="empty-state">
@@ -126,6 +178,13 @@ function ContributionForm({ initialCategory, onClose }) {
           <p>
             Thanks for sharing what you know. You earned <strong>10 reputation points.</strong>
           </p>
+          {newerDraftWaiting && <p role="status">A newer draft is still waiting in Campus Labs.</p>}
+          {draftCleanupFailed && (
+            <p role="status">
+              Published successfully, but this device could not remove its saved draft. Clear it
+              from Campus Labs when storage is available.
+            </p>
+          )}
           <button
             className="button button-primary"
             onClick={() => {
@@ -139,23 +198,115 @@ function ContributionForm({ initialCategory, onClose }) {
         </div>
       ) : (
         <form onSubmit={submit} className="contribution-form">
-          <p className="muted">
-            A practical guide, a hidden gem, or a lesson learned. Every perspective helps.
-          </p>
-          <div className="contribution-categories">
-            {categories.map(([name, Icon]) => (
-              <button
-                type="button"
-                key={name}
-                aria-pressed={form.category === name}
-                className={form.category === name ? 'active' : ''}
-                onClick={() => setForm({ ...form, category: name })}
-              >
-                <Icon size={17} />
-                {name}
-              </button>
-            ))}
-          </div>
+          {!forumPost && (
+            <p className="muted">
+              A practical guide, a hidden gem, or a lesson learned. Every perspective helps.
+            </p>
+          )}
+          {rescue.enabled && (
+            <div className="form-info" style={{ display: 'block' }} role="status">
+              <p style={{ margin: 0 }}>
+                {rescue.storageError ||
+                  (draftPending
+                    ? 'A draft is waiting on this device. Restore or discard it to continue.'
+                    : rescue.hasDraft
+                      ? draftMessage || 'Draft kept on this device.'
+                      : 'Draft rescue is on. Your next edit stays on this device.')}
+              </p>
+              {rescue.hasDraft && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                  {draftPending && (
+                    <button
+                      type="button"
+                      className="button button-outline"
+                      disabled={busy}
+                      onClick={restoreDraft}
+                    >
+                      Restore draft
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button button-outline"
+                    disabled={busy}
+                    onClick={discardDraft}
+                  >
+                    Discard draft
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          {forumPost ? (
+            <div className="form-grid contribution-forum-fields">
+              <label className="form-field">
+                <span>Post in</span>
+                <select
+                  value={form.communitySlug || 'campus'}
+                  disabled={draftEditingBlocked || !groups.length}
+                  onChange={(event) => {
+                    const group = groups.find((item) => item.slug === event.target.value);
+                    if (group)
+                      changeForm({
+                        ...form,
+                        communitySlug: group.slug,
+                        category: group.default_category || 'Discussion',
+                      });
+                  }}
+                >
+                  {!groups.some((group) => group.slug === (form.communitySlug || 'campus')) && (
+                    <option value={form.communitySlug || 'campus'}>
+                      g/{form.communitySlug || 'campus'}
+                    </option>
+                  )}
+                  {groups.map((group) => (
+                    <option key={group.slug} value={group.slug}>
+                      g/{group.slug}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">
+                <span>Post type</span>
+                <select
+                  name="postKind"
+                  value={form.postKind}
+                  disabled={draftEditingBlocked}
+                  onChange={update}
+                >
+                  <option value="">
+                    {form.category === 'Events'
+                      ? 'Event'
+                      : form.category === 'Academics'
+                        ? 'Guide'
+                        : 'Discussion'}
+                  </option>
+                  <option value="Question">Question</option>
+                  {form.category !== 'Academics' && <option value="Guide">Guide</option>}
+                  {['Events', 'Academics'].includes(form.category) && (
+                    <option value="Discussion">Discussion</option>
+                  )}
+                  <option value="Link">Link</option>
+                </select>
+              </label>
+            </div>
+          ) : (
+            <div className="contribution-categories">
+              {categories.map(([name, Icon]) => (
+                <button
+                  type="button"
+                  key={name}
+                  disabled={draftEditingBlocked}
+                  aria-pressed={form.category === name}
+                  className={form.category === name ? 'active' : ''}
+                  onClick={() => changeForm({ ...form, category: name })}
+                >
+                  <Icon size={17} />
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
           {field(
             'title',
             'Give it a clear title',
@@ -169,6 +320,7 @@ function ContributionForm({ initialCategory, onClose }) {
               name="description"
               value={form.description}
               onChange={update}
+              disabled={draftEditingBlocked}
               rows={5}
               minLength={15}
               maxLength={10000}
@@ -220,7 +372,10 @@ function ContributionForm({ initialCategory, onClose }) {
               false,
               'e.g. Fridays, 5 PM at the Student Center',
             )}
-          {['Events', 'Lifestyle'].includes(form.category) &&
+          {forumPost &&
+            form.postKind === 'Link' &&
+            field('linkUrl', 'Link URL', 'url', true, 'https://...')}
+          {(forumPost || ['Events', 'Lifestyle'].includes(form.category)) &&
             field('imageUrl', 'Image URL (optional)', 'url', false, 'https://...')}
           <div className="form-info">
             <Info size={17} />
@@ -244,8 +399,8 @@ function ContributionForm({ initialCategory, onClose }) {
             >
               Cancel
             </button>
-            <button className="button button-primary" disabled={busy}>
-              {busy ? 'Publishing...' : 'Share with the collective'}
+            <button className="button button-primary" disabled={busy || draftPending}>
+              {busy ? 'Publishing...' : forumPost ? 'Publish post' : 'Share with the collective'}
               <ArrowRight size={16} />
             </button>
           </div>

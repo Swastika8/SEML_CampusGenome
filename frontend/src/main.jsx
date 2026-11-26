@@ -5,6 +5,7 @@ import './details.css';
 import './dna-extras.css';
 import './common-room.css';
 import './campus-features.css';
+import './forum.css';
 import App from './App.jsx';
 import ErrorBoundary from './components/common/ErrorBoundary.jsx';
 

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-export default function Modal({ title, onClose, children, wide = false }) {
+export default function Modal({ title, onClose, children, wide = false, className = '' }) {
   const dialog = useRef();
   const titleId = useId();
   const close = useRef(onClose);
@@ -20,7 +20,7 @@ export default function Modal({ title, onClose, children, wide = false }) {
     <dialog
       aria-labelledby={titleId}
       ref={dialog}
-      className={'cg-dialog ' + (wide ? 'wide' : '')}
+      className={'cg-dialog ' + (wide ? 'wide ' : '') + className}
       onCancel={(e) => {
         e.preventDefault();
         close.current();

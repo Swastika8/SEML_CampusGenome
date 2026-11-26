@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, LogIn } from 'lucide-react';
+import { User, LogOut, ChevronDown, LogIn, Beaker } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -19,6 +20,17 @@ export default function UserDropdown() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [isOpen]);
 
   if (!isAuthenticated) {
     return (
@@ -37,6 +49,10 @@ export default function UserDropdown() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        ref={buttonRef}
+        aria-label="Open account menu"
+        aria-expanded={isOpen}
+        aria-controls="campus-account-menu"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 p-1 rounded-full hover:bg-white/50 dark:hover:bg-midnight-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-gold-500"
       >
@@ -51,6 +67,8 @@ export default function UserDropdown() {
 
       {/* Dropdown Menu */}
       <div
+        id="campus-account-menu"
+        hidden={!isOpen}
         className={`absolute right-0 mt-2 w-52 bg-white/95 dark:bg-midnight-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 dark:border-charcoal-700 overflow-hidden transition-all duration-200 origin-top-right z-50 ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
       >
         <div className="p-3.5 border-b border-gray-100 dark:border-charcoal-700 bg-gray-50/50 dark:bg-white/5">
@@ -77,6 +95,20 @@ export default function UserDropdown() {
           >
             <User size={16} />
             My Profile & Genome
+          </Link>
+          <Link
+            to="/labs"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-charcoal-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-midnight-900/50 rounded-lg transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            <Beaker size={16} />
+            Campus Labs
+            <span
+              aria-hidden="true"
+              className="ml-auto text-[9px] text-gold-600 dark:text-gold-400"
+            >
+              BETA
+            </span>
           </Link>
           <button
             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors mt-1"

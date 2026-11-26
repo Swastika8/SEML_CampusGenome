@@ -1,8 +1,8 @@
 # CampusGenome
 
-The student-powered campus collective: academic guides, opportunities, events, communities, campus places, and the useful knowledge students pass on.
+An unofficial student forum for campus questions, clubs, opportunities, and the useful knowledge students pass on.
 
-CampusGenome now feels like an unofficial student common room: readable posts, topic channels, helpful votes, student handles and a pinned community board. Gold accents, serif headlines, sticky notes, doodles and the midnight theme retain its creative personality. Real API interactions and a self-contained local demo support the experience. The implementation report is at [output/pdf/CampusGenome-Upgrade-Report.pdf](output/pdf/CampusGenome-Upgrade-Report.pdf).
+Home shows all posts. Join a community to build a Following feed, or create a public community for your own university. The original campus activities are under **Campus extras**, and the site includes a self-contained local demo.
 
 ## Start the local demo
 
@@ -22,14 +22,16 @@ You can browse without an account. To try writes, open **Sign in** and select **
 
 ## What changed
 
+- Create or join public `g/` communities, filter the directory by university, and follow only the communities you join. Open a community with `/c/<slug>`.
+- Sort by Hot, New, or Top. Publish a discussion, question, guide, or link, and use the arrows to upvote, downvote, or clear a vote. Existing helpful votes count as upvotes.
+- Reply to individual comments, collapse reply chains, save or share posts, and report posts for review. Community creators review reports for their own communities. Site moderators can review reports across the forum.
+- Sign in from a discussion or community and return there after authentication. Campus affiliations are labels supplied by community creators.
+- Campus Labs has an optional local draft, a focus timer, private Pocket exports, and an RSVP calendar download.
 - A daily campus dilemma with one changeable vote per account, real aggregate totals, undo and midnight IST rollover.
 - A private, clearable browser reading trail, separated by account and held until sign-in initialization finishes.
 - Optional library mode that hides feed photos and remembers the reading preference.
 - The supplied campus plan traced into 17 selectable places, including all four gates, searchable by name and filterable by type. Reference data loads on hosted and demo databases while preserving field notes.
-
-- A common-room homepage with post voting rails, author handles, flairs, replies, pocket saves, share links, a composer and contributor karma.
-- Server-filtered channels: Exam survival, After class, Future you, What's happening and Find your people. Buzzing, Fresh and Most helpful sorts use the actual API with pagination.
-- A compact search header, readable paper surfaces, playful pinboard notes and a calmer campus backdrop, with a collapsible icon rail and guided tour.
+- The original campus channels, pinboard, and guided tour are on `/commons`. The original club directory is on `/clubs`.
 - A clean illustrated field guide with numbered places, URL-backed selection, a directory and one readable details panel that stacks on mobile.
 - Authenticated building field notes with server-selected authors, persistence and real history, plus useful Wi-Fi and quiet-spot accordions.
 - The original academic drilldown, editorial career page, news mosaic and organic lifestyle layouts.
@@ -52,7 +54,7 @@ The original page compositions are connected to API data. Existing UML models an
 | Layer               | Stack                                                         | Reason                                                                                                     |
 | ------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Frontend            | React 19, React Router 7                                      | Keeps the established component architecture and supports consistent client navigation                     |
-| Design              | Tailwind CSS 4, Lucide icons, React Joyride, matching CSS     | Preserves the original glass, gold, serif and midnight identity, including its guided tour                 |
+| Design              | Tailwind CSS 4, Lucide icons, React Joyride, scoped CSS       | Gives the forum responsive light and dark themes and supports the original guided tour                     |
 | Build               | Vite 8                                                        | Fast iteration, optimized output, and a same-origin API proxy                                              |
 | Backend             | Node.js, Express 4                                            | Maintains the existing JavaScript API and route structure                                                  |
 | Database            | PostgreSQL via pg; PGlite for the local demo                  | Relational integrity and real transactions, with a database-service-free demo                              |
@@ -60,7 +62,7 @@ The original page compositions are connected to API data. Existing UML models an
 | Verification        | Node test runner, Playwright, Oxlint, Prettier                | Repeatable HTTP/SQL checks, browser workflows, linting and readable source                                 |
 | Report              | Python, ReportLab, Poppler                                    | A reproducible, visually verified PDF                                                                      |
 
-Tailwind uses its updated Vite integration with the original theme configuration. Scoped common-room CSS handles forum hierarchy and responsive field-guide columns while retaining gold, serif and midnight elements. Existing APIs support votes and field notes, so these additions require no new dependency or external service. The API helper also propagates cancelled response parsing correctly to prevent a feed render failure. Lockfiles preserve the tested versions.
+The forum uses the existing React and PostgreSQL stack. The API startup migration creates the forum tables and maps existing posts into starter communities using their categories. The forum and Campus Labs need no additional service or dependency.
 
 ## Use standard PostgreSQL
 
@@ -85,25 +87,26 @@ For hosted deployment, follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). It inclu
 
 The init command does **not** insert sample data. Run `npm run db:seed` only if you intentionally want the example dataset. Existing seeded records are not overwritten by the seed inserts; displayed sample counters are reconciled with their actual rows. API startup also applies the additive schema, including the bookmarks and event attendance tables.
 
-For production, set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 characters, `CORS_ORIGINS`, and a durable PostgreSQL connection. The Vite development proxy is for local development; use an appropriate same-origin reverse proxy or `VITE_API_URL` for a separate frontend deployment. Secrets belong in backend configuration, never in `VITE_` variables. No external deployment was performed.
+For production, set `NODE_ENV=production`, a random `JWT_SECRET` of at least 32 characters, `CORS_ORIGINS`, and a durable PostgreSQL connection. The Vite development proxy is for local development. Use an appropriate same-origin reverse proxy or `VITE_API_URL` for a separate frontend deployment. Keep secrets in backend configuration.
 
 ## Verification commands
 
-| Command                       | What it checks                                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `npm test`                    | 18 API integration checks against an isolated in-memory PGlite database                                            |
-| `npm run test:postgres`       | The same 18 checks in a temporary schema on your configured PostgreSQL server; the schema is removed after the run |
-| `npm run test:e2e`            | Eighteen browser scenarios using separate in-memory API and frontend servers                                       |
-| `npm run lint`                | Frontend lint rules, including React hooks                                                                         |
-| `npm run build`               | Frontend production build                                                                                          |
-| `npm run format:check`        | Source formatting                                                                                                  |
-| `npm run format`              | Format the application source                                                                                      |
-| `npm --prefix frontend audit` | Frontend dependency advisories                                                                                     |
-| `npm --prefix backend audit`  | Backend dependency advisories                                                                                      |
+| Command                       | What it checks                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| `npm test`                    | API integration checks against an isolated in-memory PGlite database             |
+| `npm run test:postgres`       | API integration checks in temporary schemas on your configured PostgreSQL server |
+| `npm run test:ui`             | Draft rescue, focus timer, and Pocket export unit tests                          |
+| `npm run test:e2e`            | Browser scenarios using an in-memory API and separate frontend server            |
+| `npm run lint`                | Frontend lint rules, including React hooks                                       |
+| `npm run build`               | Frontend production build                                                        |
+| `npm run format:check`        | Source formatting                                                                |
+| `npm run format`              | Format the application source                                                    |
+| `npm --prefix frontend audit` | Frontend dependency advisories                                                   |
+| `npm --prefix backend audit`  | Backend dependency advisories                                                    |
 
 Browser tests use Microsoft Edge on Windows. On other platforms, install the Playwright browser with `npx playwright install chromium`. The browser suite covers restored public routes, academic drilldown, demo login/logout, registration, remembered login, publishing, discussion persistence, removal permissions, pocket saves, RSVPs, verification, keyboard search, theme persistence, the icon rail, capsule discovery and real quest progress. Overflow checks cover 320, 390, 768, 1024 and 1440 pixel widths.
 
-At delivery: **18 embedded API checks, 18 native PostgreSQL checks, and 18 browser scenarios passed**. Lint and build passed, and both application dependency audits reported zero known advisories. Native PostgreSQL tests create a unique `cg_test_...` schema and never write to existing campus tables.
+Native PostgreSQL tests create a unique `cg_test_...` schema for each suite and delete it after the run.
 
 ## API and project layout
 

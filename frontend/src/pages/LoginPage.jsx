@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Lock,
@@ -19,6 +19,15 @@ import { CAMPUS_DEPARTMENTS } from '../data/departments';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const nextPath = location.state?.returnTo;
+  const returnTo =
+    typeof nextPath === 'string' &&
+    /^\/(?![\\/])/.test(nextPath) &&
+    !nextPath.includes('\\') &&
+    ![...nextPath].some((character) => character.charCodeAt(0) < 32)
+      ? nextPath
+      : '/';
   const { login, register, demoLogin } = useAuth();
   const { health, stats } = useData();
 
@@ -70,7 +79,7 @@ export default function LoginPage() {
       }
 
       setTimeout(() => {
-        navigate('/');
+        navigate(returnTo, { replace: true });
       }, 900);
     } catch (err) {
       setErrorMessage(err.message || 'Authentication failed. Please verify credentials.');
@@ -84,7 +93,7 @@ export default function LoginPage() {
     setErrorMessage('');
     try {
       await demoLogin();
-      navigate('/');
+      navigate(returnTo, { replace: true });
     } catch (error) {
       setErrorMessage(error.message);
     } finally {
